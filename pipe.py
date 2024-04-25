@@ -35,25 +35,41 @@ class PipeManiaState:
 class Board:
     """Representação interna de um tabuleiro de PipeMania."""
 
+    def __init__(self, matrix):
+        self.matrix = matrix
+
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
         # TODO
-        pass
+        return self.matrix[row][col]
 
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
-        respectivamente."""
-        # TODO
-        pass
+        respectivamente.
+        ** Nao esta implementado caso esteja apenas em um dos limites do board """
+        if row - 1 < 0 or row + 1 >= len(self.matrix):
+            return (None, None)  # Retorna None se não houver vizinhos válidos
+        else:
+            return (self.matrix[row - 1][col], self.matrix[row + 1][col])
 
     def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente."""
-        # TODO
-        pass
+        respectivamente.
+        ** Nao esta implementado caso esteja apenas em um dos limites do board """
+        if col - 1 < 0 or col + 1 >= len(self.matrix):
+            return (None, None)  # Retorna None se não houver vizinhos válidos
+        else:
+            return (self.matrix[row][col - 1], self.matrix[row][col + 1])
 
     @staticmethod
     def parse_instance():
+
+        matrix = []
+        for line in sys.stdin:
+            row = line.strip().split()
+            matrix.append(row)
+        return Board(matrix)
+
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board.
 
@@ -64,10 +80,6 @@ class Board:
             > line = stdin.readline().split()
         """
         # TODO
-        pass
-
-    # TODO: outros metodos da classe
-
 
 class PipeMania(Problem):
     def __init__(self, board: Board):
