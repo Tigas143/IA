@@ -7,6 +7,7 @@
 # 00000 Nome2
 
 import sys
+
 from search import (
     Problem,
     Node,
@@ -45,19 +46,25 @@ class Board:
 
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
-        respectivamente.
-        ** Nao esta implementado caso esteja apenas em um dos limites do board """
-        if row - 1 < 0 or row + 1 >= len(self.matrix):
+        respectivamente. """
+        if row - 1 < 0 and row + 1 >= len(self.matrix):
             return (None, None)  # Retorna None se não houver vizinhos válidos
+        elif row - 1 < 0 :
+            return (None, self.matrix[row + 1][col])
+        elif row + 1 >= len(self.matrix):
+            return (self.matrix[row - 1][col], None) 
         else:
             return (self.matrix[row - 1][col], self.matrix[row + 1][col])
 
     def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente à esquerda e à direita,
-        respectivamente.
-        ** Nao esta implementado caso esteja apenas em um dos limites do board """
-        if col - 1 < 0 or col + 1 >= len(self.matrix):
+        respectivamente. """
+        if col - 1 < 0 and col + 1 >= len(self.matrix):
             return (None, None)  # Retorna None se não houver vizinhos válidos
+        elif col - 1 < 0 :
+            return (None, self.matrix[row][col + 1])
+        elif col + 1 >= len(self.matrix):
+            return (self.matrix[row][col - 1], None) 
         else:
             return (self.matrix[row][col - 1], self.matrix[row][col + 1])
 
@@ -84,7 +91,8 @@ class Board:
 class PipeMania(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
-        # TODO
+        state = PipeManiaState(board)
+        super().__init__(state)
         pass
 
     def actions(self, state: PipeManiaState):
@@ -123,3 +131,10 @@ if __name__ == "__main__":
     # Retirar a solução a partir do nó resultante,
     # Imprimir para o standard output no formato indicado.
     pass
+
+board = Board.parse_instance()
+print(board.adjacent_vertical_values(0, 0))
+print(board.adjacent_horizontal_values(0, 0))
+print(board.adjacent_vertical_values(1, 1))
+print(board.adjacent_horizontal_values(1, 1))
+
