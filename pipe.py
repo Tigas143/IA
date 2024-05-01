@@ -38,12 +38,48 @@ class Board:
 
     def __init__(self, matrix):
         self.matrix = matrix
+        self.size = len(matrix)
+        self.invalid = False
 
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
         # TODO
         return self.matrix[row][col]
+    def rodar_peça(self, row: int, col: int, direçao: bool):
+        """Devolve um novo Board com a peça na nova posição"""
+        peça = self.matrix[row][col]
+        move = ""
+        if peça[1] == "C":
+            if direçao:
+                move = "D"
+            else:
+                move = "E"
+        elif peça[1] == "B":
+            if direçao:
+                move = "E"
+            else:
+                move = "D"
+        elif peça[1] == "E":
+            if direçao:
+                move = "C"
+            else:
+                move = "B"
+        elif peça[1] == "D":
+            if direçao:
+                move = "B"
+            else:
+                move = "C"
+        elif peça[1] == "H":
+            move = "V"
+        elif peça[1] == "V":
+            move = "H"
+        new_matrix = self.matrix
+        new_matrix[row][col] = peça[0]+move
+        new_board = Board(new_matrix)
+        return new_board
 
+
+        
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente. """
@@ -70,7 +106,6 @@ class Board:
 
     @staticmethod
     def parse_instance():
-
         matrix = []
         for line in sys.stdin:
             row = line.strip().split()
@@ -106,7 +141,8 @@ class PipeMania(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        # TODO
+        (row, col, direcao) = action
+        return PipeManiaState(state.board.rodar_peça(row, col, direcao))
         pass
 
     def goal_test(self, state: PipeManiaState):
@@ -132,9 +168,18 @@ if __name__ == "__main__":
     # Imprimir para o standard output no formato indicado.
     pass
 
+# Ler grelha do figura 1a:
 board = Board.parse_instance()
-print(board.adjacent_vertical_values(0, 0))
-print(board.adjacent_horizontal_values(0, 0))
-print(board.adjacent_vertical_values(1, 1))
-print(board.adjacent_horizontal_values(1, 1))
+# Criar uma instância de PipeMania:
+problem = PipeMania(board)
+# Criar um estado com a configuração inicial:
+initial_state = PipeManiaState(board)
+# Mostrar valor na posição (2, 2):
+print(initial_state.board.get_value(2, 2))
+# Realizar ação de rodar 90° clockwise a peça (2, 2)
+result_state = problem.result(initial_state, (2, 2, True))
+# Mostrar valor na posição (2, 2):
+print(result_state.board.get_value(2, 2))
+
+
 
