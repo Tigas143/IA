@@ -7,7 +7,6 @@
 # 00000 Nome2
 
 import sys
-
 from search import (
     Problem,
     Node,
@@ -39,12 +38,7 @@ class Board:
     def __init__(self, matrix):
         self.matrix = matrix
         self.size = len(matrix)
-        self.invalid = False
 
-    def get_value(self, row: int, col: int) -> str:
-        """Devolve o valor na respetiva posição do tabuleiro."""
-        # TODO
-        return self.matrix[row][col]
     def rodar_peça(self, row: int, col: int, direçao: bool):
         """Devolve um novo Board com a peça na nova posição"""
         peça = self.matrix[row][col]
@@ -79,7 +73,216 @@ class Board:
         return new_board
 
 
-        
+
+    def calculate_state(self):
+        """Calcula os valores do estado interno, para ser usado
+        no tabuleiro inicial."""
+        self.remaining_cells = []
+
+        # Store which positions can be placed for each cell
+        self.possible_values = ()
+
+        for col in range(self.size):
+            possibilities = ()
+            for row in range(self.size):
+                if (col == 0 and (row == 0 or row == self.size - 1)) or (col == self.size - 1 and (row == 0 or row == self.size - 1)):
+                    if  self.matrix[row][col][0] == "B" or self.matrix[row][col][0] == "L":
+                        self.invalid = True
+                        return self
+                    elif self.matrix[row][col][0] == "V":
+                        if (col == 0 and row == 0):
+                            possibilities += ((),)
+                            self.set_cell(row, col,"VB")
+                        elif (col == self.size - 1 and row == 0):
+                            possibilities += ((),)
+                            self.set_cell(row, col,"VE")
+                        elif (col == 0 and row == self.size - 1):
+                            possibilities += ((),)
+                            self.set_cell(row, col,"VD")
+                        elif (col == self.size - 1 and row == self.size - 1):
+                            possibilities += ((),)
+                            self.set_cell(row, col,"VC")
+
+                elif row == 0:
+                    if self.matrix[row][col][0] == "B":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"BB")
+                    elif self.matrix[row][col][0] == "L":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"LH")
+                elif row == self.size - 1:
+                    if self.matrix[row][col][0] == "B":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"BC")
+                    elif self.matrix[row][col][0] == "L":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"LH")
+
+                elif col == 0:
+                    if self.matrix[row][col][0] == "B":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"BD")
+                    elif self.matrix[row][col][0] == "L":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"LV")
+                elif col == self.size - 1:
+                    if self.matrix[row][col][0] == "B":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"BE")
+                    elif self.matrix[row][col][0] == "L":
+                        possibilities += ((),)
+                        self.set_cell(row, col,"LV")
+                else:   
+                    possibilities_aux = tuple(self.actions_for_cell(row, col))
+                    possibilities += (possibilities_aux,)
+
+            self.possible_values += (possibilities,)
+
+        return self
+    """      
+        for row in range(self.size):
+            zero_count, one_count = 0, 0
+            for col in range(self.size):
+                if self.cells[row][col] == 0:
+                    zero_count += 1
+                elif self.cells[row][col] == 1:
+                    one_count += 1
+            self.row_counts += ((fecho, bifurcacao, volta, ligacao),)
+
+        for row in range(self.size):
+            row_possibilities = ()
+            for col in range(self.size):
+                if self.cells[row][col] != 2:
+                    row_possibilities += ((),)
+                    continue
+                possibilities = tuple(self.actions_for_cell(row, col))
+                row_possibilities += (possibilities,)
+                if len(possibilities) == 2:
+                    self.count_pos_with_two_actions += 1
+                    self.remaining_cells.append((row, col))
+                elif len(possibilities) == 0:
+                    # If it's impossible to complete a board,
+                    # abort immediately to save computing costs
+                    self.invalid = True
+                    return self
+                else:
+                    # Insert cells with only one possibility at the front
+                    # of the list, so they're placed first, reducing the
+                    # branching factor
+                    self.remaining_cells.insert(0, (row, col))
+            self.possible_values += (row_possibilities,)
+
+        return self
+    """
+    def set_cell(self, row, col, position):
+        new_matrix = self.matrix
+        new_matrix[row][col] = position
+        new_board = Board(new_matrix)
+        return new_board
+    
+    def actions_for_cell(self, row, col):
+        """ A maneira como esta organizado com os if's pode ser alterada no futuro
+            para nao haver a parte dos if's com move[1], mas por enquanto deixamos
+            assim e depois vemos """
+        move = self.matrix[row][col]
+        vertical_move = self.adjacent_vertical_values(self, row, col)
+        horizontal_move = self.adjacent_horizontal_values(self, row, col)
+        if move[0] == "F":
+            if move[1] == "C":
+                acceptable_up_connections = ("BB", "BE","BD","VB", "VE", "LV")
+            elif move[1] == "B":
+                acceptable_down_conections  = ("BC", "BE", "BD", "VC", "VD", "LV")
+            elif move[1] == "E":
+                acceptable_left_conections = ("BC", "BB", "BD", "VB", "VD", "LH")
+            elif move[1] == "D":
+                acceptable_right_conections = ("BC", "BB", "BE", "VC", "VE", "LH")
+        elif move[0] == "B":
+            if move[1] == "C":
+                acceptable_up_conections = ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
+                acceptable_right_conections = ("FE", "BC", "BE", "BB","VC", "VE", "LH")
+                acceptable_left_conections = ("FD", "BC", "BD", "BB", "VB", "VD", "LH")
+            if move[1] == "B":
+                acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+                acceptable_right_conections = ("FE", "BC", "BE", "BB","VC", "VE", "LH")
+                acceptable_left_conections = ("FD", "BC", "BD", "BB", "VB", "VD", "LH")
+            if move[1] == "E":
+                acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+                acceptable_up_conections = ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
+                acceptable_left_conections = ("FD", "BC", "BD", "BB", "VB", "VD", "LH")
+            if move[1] == "D":
+                acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+                acceptable_right_conections = ("FE", "BC", "BE", "BB","VC", "VE", "LH")
+                acceptable_up_conections = ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
+        elif move[0] == "V":
+            if move[1] == "C":
+                acceptable_up_connections = ("FB", "BB", "BE", "BD", "VB","VE", "LV")
+                acceptable_left_conections = ("FD", "BC", "BB", "BD", "VB", "VD", "LH")
+            elif move[1] == "B":
+                acceptable_right_conections = ("FE", "BC", "BB", "BE", "VC", "VE", "LH")
+                acceptable_down_conections = ("FC", "BE", "BC", "BD", "VC", "VD", "LV")
+            elif move[1] == "E":
+                acceptable_left_conections = ("FD", "BC", "BB", "BD", "VB","VD", "LH")
+                acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+            elif move[1] == "D":
+                acceptable_right_conections = ("FE", "BC", "BB", "BE", "VC", "VE","LH")
+                acceptable_up_conections = ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
+        elif move[0] == "L":
+            if move[1] == "H":
+                acceptable_left_conections = ("FD", "BC", "BB", "BD","VD", "VB", "LH")
+                acceptable_right_conections = ("FE", "BC", "BB", "BE", "VC", "VE", "LH")
+            elif move[1] == "V":
+                acceptable_up_conections = ("FB", "BB", "BE", "BD", "VE", "VB", "LV")
+                acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+  
+    def check_frontiers(self, row, col):
+        move = self.matrix[row][col]
+        if row == 0 and col == 0:
+            if move[0] == "F":
+                return ("FD","FB")
+        elif row == 0 and col == self.size - 1:
+            if move[0] == "F":
+                return ("FB","FE")
+        elif row == self.size - 1 and col == 0:
+            if move[0] == "F":
+                return ("FC","FD")
+        elif row == self.size - 1 and col == self.size - 1:
+            if move[0] == "F":
+                return ("FC","FE")
+        elif col == 0:
+            if move[0] == "F":
+                return ("FB","FC","FD")
+            elif move[0] == "V":
+                return ("VB","VD")
+        elif col == self.size - 1:
+            if move[0] == "F":
+                return ("FB","FC","FE")
+            elif move[0] == "V":
+                return ("VC","VE")
+        elif row == 0:
+            if move[0] == "F":
+                return ("FB","FE","FD")
+            elif move[0] == "V":
+                return ("VB","VE")
+        elif row == self.size - 1:
+            if move[0] == "F":
+                return ("FC","FE","FD")
+            elif move[0] == "V":
+                return ("VC","VD")
+        else:
+            if move[0] == "F":
+                return ("FC","FB","FE","FD")
+            elif move[0] == "B":
+                return ("BC","BB","BE","BD")
+            elif move[0] == "V":
+                return ("VC","VB","VE","VD")
+            elif move[0] == "L":
+                return ("LH","LV")
+
+    def get_value(self, row: int, col: int) -> str:
+        """Devolve o valor na respetiva posição do tabuleiro."""
+        # TODO
+        return self.matrix[row][col]
+
     def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
         """Devolve os valores imediatamente acima e abaixo,
         respectivamente. """
@@ -104,8 +307,10 @@ class Board:
         else:
             return (self.matrix[row][col - 1], self.matrix[row][col + 1])
 
+
     @staticmethod
     def parse_instance():
+
         matrix = []
         for line in sys.stdin:
             row = line.strip().split()
@@ -122,12 +327,15 @@ class Board:
             > line = stdin.readline().split()
         """
         # TODO
+        pass
+
+    # TODO: outros metodos da classe
+
 
 class PipeMania(Problem):
     def __init__(self, board: Board):
         """O construtor especifica o estado inicial."""
-        state = PipeManiaState(board)
-        super().__init__(state)
+        # TODO
         pass
 
     def actions(self, state: PipeManiaState):
@@ -141,8 +349,7 @@ class PipeMania(Problem):
         'state' passado como argumento. A ação a executar deve ser uma
         das presentes na lista obtida pela execução de
         self.actions(state)."""
-        (row, col, direcao) = action
-        return PipeManiaState(state.board.rodar_peça(row, col, direcao))
+        # TODO
         pass
 
     def goal_test(self, state: PipeManiaState):
@@ -157,29 +364,63 @@ class PipeMania(Problem):
         # TODO
         pass
 
+
+    def get_next_cell(self):
+        return self.remaining_cells[0]
+
     # TODO: outros metodos da classe
 
 
-if __name__ == "__main__":
-    # TODO:
-    # Ler o ficheiro do standard input,
-    # Usar uma técnica de procura para resolver a instância,
-    # Retirar a solução a partir do nó resultante,
-    # Imprimir para o standard output no formato indicado.
-    pass
+class PipeMania(Problem):
+    def __init__(self, board: Board):
+        """O construtor especifica o estado inicial."""
+        state = PipeManiaState(board)
+        super().__init__(state)
+        pass
 
-# Ler grelha do figura 1a:
-board = Board.parse_instance()
-# Criar uma instância de PipeMania:
-problem = PipeMania(board)
-# Criar um estado com a configuração inicial:
-initial_state = PipeManiaState(board)
-# Mostrar valor na posição (2, 2):
-print(initial_state.board.get_value(2, 2))
-# Realizar ação de rodar 90° clockwise a peça (2, 2)
-result_state = problem.result(initial_state, (2, 2, True))
-# Mostrar valor na posição (2, 2):
-print(result_state.board.get_value(2, 2))
+    def actions(self, state: PipeManiaState):
+        """Retorna uma lista de ações que podem ser executadas a
+        partir do estado passado como argumento.
+        if state.board.invalid or state.board.get_remaining_cells_count() == 0:
+            return []
+
+        row, col = state.board.get_next_cell()
+
+        possibilities = state.board.get_possibilities_for_cell(row, col)
+        return map(lambda number: (row, col, number), possibilities)"""
+
+    def result(self, state: PipeManiaState, action):
+        """Retorna o estado resultante de executar a 'action' sobre
+        'state' passado como argumento. A ação a executar deve ser uma
+        das presentes na lista obtida pela execução de
+        self.actions(state).
+        (row, col, value) = action
+        return PipeManiaState(state.board.set_number(row, col, value))"""
+
+    def goal_test(self, state: PipeManiaState):
+        """Retorna True se e só se o estado passado como argumento é
+        um estado objetivo. Deve verificar se todas as posições do tabuleiro
+        estão preenchidas com uma sequência de números adjacentes.
+        return state.board.get_remaining_cells_count() == 0"""
+
+    def h(self, node: Node):
+        """Função heuristica utilizada para a procura A*.
+        board = node.state.board
+        return board.count_pos_with_two_actions"""
+
+
+
+if __name__ == "__main__":
+    board = Board.parse_instance()
+    initial_state = PipeManiaState(board)
+    print(initial_state.board.get_value(0, 0))
+    second = initial_state.board.calculate_state()
+    print(second.get_value(0, 0))
+    """
+    goal_node = greedy_search(takuzu)
+    print(goal_node.state.board)
+    pass
+    """
 
 
 
