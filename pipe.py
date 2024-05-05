@@ -34,11 +34,15 @@ class PipeManiaState:
 
 class Board:
     """Representação interna de um tabuleiro de PipeMania."""
-
     def __init__(self, matrix):
         self.matrix = matrix
         self.size = len(matrix)
-
+        self.remaining_pecas = []
+    
+    def print(self):
+        board_string = "\n".join([" ".join(row) for row in self.matrix])
+        return board_string
+    
     def rodar_peça(self, row: int, col: int, direçao: bool):
         """Devolve um novo Board com a peça na nova posição"""
         peça = self.matrix[row][col]
@@ -70,6 +74,7 @@ class Board:
         new_matrix = self.matrix
         new_matrix[row][col] = peça[0]+move
         new_board = Board(new_matrix)
+        new_board.remaining_pecas = self.remaining_pecas
         return new_board
 
 
@@ -77,10 +82,10 @@ class Board:
     def calculate_state(self):
         """Calcula os valores do estado interno, para ser usado
         no tabuleiro inicial."""
-        self.remaining_cells = []
+        self.remaining_pecas = []
 
         # Store which positions can be placed for each cell
-        self.possible_values = ()
+        self.possible_moves = ()
 
         for col in range(self.size):
             possibilities = ()
@@ -102,6 +107,8 @@ class Board:
                         elif (col == self.size - 1 and row == self.size - 1):
                             possibilities += ((),)
                             self.set_cell(row, col,"VC")
+                    else:
+                        self.remaining_pecas.append((row, col))
 
                 elif row == 0:
                     if self.matrix[row][col][0] == "B":
@@ -135,8 +142,9 @@ class Board:
                 else:   
                     possibilities_aux = tuple(self.actions_for_cell(row, col))
                     possibilities += (possibilities_aux,)
+                    self.remaining_pecas.append((row, col))
 
-            self.possible_values += (possibilities,)
+            self.possible_moves += (possibilities,)
 
         return self
     """      
@@ -170,14 +178,17 @@ class Board:
                     # of the list, so they're placed first, reducing the
                     # branching factor
                     self.remaining_cells.insert(0, (row, col))
-            self.possible_values += (row_possibilities,)
+            self.possible_moves += (row_possibilities,)
 
         return self
     """
     def set_cell(self, row, col, position):
-        new_matrix = self.matrix
+        new_matrix = [row[:] for row in self.matrix]  # Create a new copy of the matrix
         new_matrix[row][col] = position
         new_board = Board(new_matrix)
+        # Carry over other attributes
+        new_board.remaining_pecas = self.remaining_pecas[:]
+        # Add any additional attributes you need to transfer
         return new_board
     
     def actions_for_cell(self, row, col):
@@ -185,8 +196,12 @@ class Board:
             para nao haver a parte dos if's com move[1], mas por enquanto deixamos
             assim e depois vemos """
         move = self.matrix[row][col]
-        vertical_move = self.adjacent_vertical_values(self, row, col)
-        horizontal_move = self.adjacent_horizontal_values(self, row, col)
+        vertical_move = self.adjacent_vertical_values(row, col)
+        horizontal_move = self.adjacent_horizontal_values(row, col)
+        acceptable_up_conections = ()
+        acceptable_down_conections = ()
+        acceptable_right_conections = ()
+        acceptable_left_conections = ()
         if move[0] == "F":
             if move[1] == "C":
                 acceptable_up_connections = ("BB", "BE","BD","VB", "VE", "LV")
@@ -233,6 +248,7 @@ class Board:
             elif move[1] == "V":
                 acceptable_up_conections = ("FB", "BB", "BE", "BD", "VE", "VB", "LV")
                 acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
+        return (acceptable_up_conections, acceptable_right_conections, acceptable_left_conections, acceptable_down_conections)
   
     def check_frontiers(self, row, col):
         move = self.matrix[row][col]
@@ -278,6 +294,7 @@ class Board:
             elif move[0] == "L":
                 return ("LH","LV")
 
+    
     def get_value(self, row: int, col: int) -> str:
         """Devolve o valor na respetiva posição do tabuleiro."""
         # TODO
@@ -306,7 +323,44 @@ class Board:
             return (self.matrix[row][col - 1], None) 
         else:
             return (self.matrix[row][col - 1], self.matrix[row][col + 1])
+    
+    def get_remaining_pecas_count(self):
+        """Devolve o número de posições em branco"""
+        return len(self.remaining_pecas)
 
+    def calculate_next_possible_moves(self, row: int, col: int):
+        """Recebe a posição que foi alterada, de forma a atualizar os valores
+        possíveis para as posições afetadas"""
+
+        # Recalculate for affected row and column
+        new_possible_moves = ()
+        for r in range(self.size):
+            row_possibilities = ()
+            for c in range(self.size):
+                old_possibilities = self.get_possibilities_for_peca(r, c)
+                if (r != row and c != col) or len(old_possibilities) == 0:
+                    row_possibilities += (old_possibilities,)
+                    continue
+
+                possibilities = tuple(self.actions_for_cell(r, c))
+
+                if (r != row or c != col) and len(possibilities) == 0:
+                    self.invalid = True
+                    return
+
+                if len(old_possibilities) == 2 and len(possibilities) < 2:
+                    self.count_pos_with_two_actions -= 1
+                    if not (r == row and c == col):
+                        self.remaining_cells.remove((r, c))
+                        self.remaining_cells.insert(0, (r, c))
+
+                row_possibilities += (possibilities,)
+
+            new_possible_moves += (row_possibilities,)
+
+        self.possible_moves = new_possible_moves
+    def get_possibilities_for_peca(self, row, col):
+        return self.possible_moves[row][col]
 
     @staticmethod
     def parse_instance():
@@ -315,60 +369,21 @@ class Board:
         for line in sys.stdin:
             row = line.strip().split()
             matrix.append(row)
-        return Board(matrix)
+        return Board(matrix).calculate_state()
 
         """Lê o test do standard input (stdin) que é passado como argumento
         e retorna uma instância da classe Board.
 
         Por exemplo:
-            $ python3 pipe.py < test-01.txt
+            $ python pipe.py < test-01.txt
 
             > from sys import stdin
             > line = stdin.readline().split()
         """
-        # TODO
-        pass
 
     # TODO: outros metodos da classe
 
 
-class PipeMania(Problem):
-    def __init__(self, board: Board):
-        """O construtor especifica o estado inicial."""
-        # TODO
-        pass
-
-    def actions(self, state: PipeManiaState):
-        """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento."""
-        # TODO
-        pass
-
-    def result(self, state: PipeManiaState, action):
-        """Retorna o estado resultante de executar a 'action' sobre
-        'state' passado como argumento. A ação a executar deve ser uma
-        das presentes na lista obtida pela execução de
-        self.actions(state)."""
-        # TODO
-        pass
-
-    def goal_test(self, state: PipeManiaState):
-        """Retorna True se e só se o estado passado como argumento é
-        um estado objetivo. Deve verificar se todas as posições do tabuleiro
-        estão preenchidas de acordo com as regras do problema."""
-        # TODO
-        pass
-
-    def h(self, node: Node):
-        """Função heuristica utilizada para a procura A*."""
-        # TODO
-        pass
-
-
-    def get_next_cell(self):
-        return self.remaining_cells[0]
-
-    # TODO: outros metodos da classe
 
 
 class PipeMania(Problem):
@@ -388,6 +403,7 @@ class PipeMania(Problem):
 
         possibilities = state.board.get_possibilities_for_cell(row, col)
         return map(lambda number: (row, col, number), possibilities)"""
+        pass
 
     def result(self, state: PipeManiaState, action):
         """Retorna o estado resultante de executar a 'action' sobre
@@ -396,18 +412,20 @@ class PipeMania(Problem):
         self.actions(state).
         (row, col, value) = action
         return PipeManiaState(state.board.set_number(row, col, value))"""
+        (row, col, direcao) = action
+        return PipeManiaState(state.board.rodar_peça(row, col, direcao))
 
     def goal_test(self, state: PipeManiaState):
         """Retorna True se e só se o estado passado como argumento é
         um estado objetivo. Deve verificar se todas as posições do tabuleiro
-        estão preenchidas com uma sequência de números adjacentes.
-        return state.board.get_remaining_cells_count() == 0"""
+        estão preenchidas com uma sequência de números adjacentes."""
+        return state.board.get_remaining_pecas_count() == 0
 
     def h(self, node: Node):
         """Função heuristica utilizada para a procura A*.
         board = node.state.board
         return board.count_pos_with_two_actions"""
-
+        pass
 
 
 if __name__ == "__main__":
@@ -421,6 +439,4 @@ if __name__ == "__main__":
     print(goal_node.state.board)
     pass
     """
-
-
 
