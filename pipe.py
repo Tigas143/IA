@@ -27,9 +27,15 @@ class PipeManiaState:
         PipeManiaState.state_id += 1
 
     def __lt__(self, other):
-        return self.id < other.id
+        depth_diff = (
+            self.board.get_remaining_pecas_count()
+            - other.board.get_remaining_pecas_count()
+        )
 
-    # TODO: outros metodos da classe
+        if depth_diff != 0:
+            return depth_diff < 0
+
+        return self.id < other.id
 
 
 class Board:
@@ -46,13 +52,39 @@ class Board:
     
     def rodar_peça(self, row: int, col: int, peça: str):
         """Devolve um novo Board com a peça na nova posição"""
-        new_matrix = self.matrix
+        print("Here")
+        new_matrix = [row[:] for row in self.matrix]  # Creating a deep copy of the matrix
         new_matrix[row][col] = peça
+        print(row,col, peça)
         new_board = Board(new_matrix)
-        new_board.remaining_pecas = self.remaining_pecas
         new_board.possible_moves = self.possible_moves
+        if len(self.possible_moves[(row, col)]) == 1 and self.possible_moves[(row, col)][0] == peça:
+            print(row,col)
+            new_board.possible_moves[(row, col)] = ()
+            new_board.remaining_pecas = self.remaining_pecas[1:]
+        else:
+            print(self.possible_moves)
+            first_element = self.remaining_pecas[0]
+            new_remaining_pecas = self.remaining_pecas[1:] + [first_element]
+            new_board.remaining_pecas = new_remaining_pecas
+
+        new_board.calculate_next_possible_moves(row, col)
         return new_board
 
+    def calculate_next_possible_moves(self, row: int, col: int):
+        """Recebe a posição que foi alterada, de forma a atualizar as possibilidades
+        das peças para as posições afetadas"""  
+        
+        if (row,col) in self.remaining_pecas:
+            self.remove_possibilities(row, col)
+        if (row+1,col) in self.remaining_pecas:
+            self.remove_possibilities(row+1, col)
+        if (row-1,col) in self.remaining_pecas:
+            self.remove_possibilities(row-1, col)
+        if (row,col+1) in self.remaining_pecas:
+            self.remove_possibilities(row, col+1)
+        if (row,col-1) in self.remaining_pecas:
+            self.remove_possibilities(row, col-1)
 
 
     def calculate_state(self):
@@ -419,6 +451,7 @@ class PipeMania(Problem):
         row, col = state.board.get_next_peca()
 
         possibilities = state.board.get_possibilities_for_peca(row, col)
+        print(possibilities)
         return map(lambda peca: (row, col, peca), possibilities)
         pass
 
@@ -448,8 +481,8 @@ class PipeMania(Problem):
 if __name__ == "__main__":
     board = Board.parse_instance()
     takuzu = PipeMania(board)
-    goal_node = greedy_search(takuzu)
-    print(goal_node.state.board)
+    goal_node = depth_first_tree_search(takuzu)
+    print("Solution:\n", goal_node.state.board.print(), sep="")
     pass
     
 
