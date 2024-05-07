@@ -38,43 +38,19 @@ class Board:
         self.matrix = matrix
         self.size = len(matrix)
         self.remaining_pecas = []
+        self.invalid = False
     
     def print(self):
         board_string = "\n".join([" ".join(row) for row in self.matrix])
         return board_string
     
-    def rodar_peça(self, row: int, col: int, direçao: bool):
+    def rodar_peça(self, row: int, col: int, peça: str):
         """Devolve um novo Board com a peça na nova posição"""
-        peça = self.matrix[row][col]
-        move = ""
-        if peça[1] == "C":
-            if direçao:
-                move = "D"
-            else:
-                move = "E"
-        elif peça[1] == "B":
-            if direçao:
-                move = "E"
-            else:
-                move = "D"
-        elif peça[1] == "E":
-            if direçao:
-                move = "C"
-            else:
-                move = "B"
-        elif peça[1] == "D":
-            if direçao:
-                move = "B"
-            else:
-                move = "C"
-        elif peça[1] == "H":
-            move = "V"
-        elif peça[1] == "V":
-            move = "H"
         new_matrix = self.matrix
-        new_matrix[row][col] = peça[0]+move
+        new_matrix[row][col] = peça
         new_board = Board(new_matrix)
         new_board.remaining_pecas = self.remaining_pecas
+        new_board.possible_moves = self.possible_moves
         return new_board
 
 
@@ -398,39 +374,10 @@ class Board:
         """Devolve o número de posições em branco"""
         return len(self.remaining_pecas)
 
-    def calculate_next_possible_moves(self, row: int, col: int):
-        """Recebe a posição que foi alterada, de forma a atualizar os valores
-        possíveis para as posições afetadas"""
-
-        # Recalculate for affected row and column
-        new_possible_moves = ()
-        for r in range(self.size):
-            row_possibilities = ()
-            for c in range(self.size):
-                old_possibilities = self.get_possibilities_for_peca(r, c)
-                if (r != row and c != col) or len(old_possibilities) == 0:
-                    row_possibilities += (old_possibilities,)
-                    continue
-
-                possibilities = tuple(self.actions_for_cell(r, c))
-
-                if (r != row or c != col) and len(possibilities) == 0:
-                    self.invalid = True
-                    return
-
-                if len(old_possibilities) == 2 and len(possibilities) < 2:
-                    self.count_pos_with_two_actions -= 1
-                    if not (r == row and c == col):
-                        self.remaining_cells.remove((r, c))
-                        self.remaining_cells.insert(0, (r, c))
-
-                row_possibilities += (possibilities,)
-
-            new_possible_moves += (row_possibilities,)
-
-        self.possible_moves = new_possible_moves
+    def get_next_peca(self):
+        return self.remaining_pecas[0]
     def get_possibilities_for_peca(self, row, col):
-        return self.possible_moves[row][col]
+        return self.possible_moves[(row, col)]
 
     @staticmethod
     def parse_instance():
@@ -469,10 +416,10 @@ class PipeMania(Problem):
         if state.board.invalid or state.board.get_remaining_pecas_count() == 0:
             return []
 
-        row, col = state.board.get_next_cell()
+        row, col = state.board.get_next_peca()
 
-        possibilities = state.board.get_possibilities_for_cell(row, col)
-        return map(lambda number: (row, col, number), possibilities)
+        possibilities = state.board.get_possibilities_for_peca(row, col)
+        return map(lambda peca: (row, col, peca), possibilities)
         pass
 
     def result(self, state: PipeManiaState, action):
@@ -482,8 +429,8 @@ class PipeMania(Problem):
         self.actions(state).
         (row, col, value) = action
         return PipeManiaState(state.board.set_number(row, col, value))"""
-        (row, col, direcao) = action
-        return PipeManiaState(state.board.rodar_peça(row, col, direcao))
+        (row, col, peca) = action
+        return PipeManiaState(state.board.rodar_peça(row, col, peca))
 
     def goal_test(self, state: PipeManiaState):
         """Retorna True se e só se o estado passado como argumento é
@@ -500,13 +447,9 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
     board = Board.parse_instance()
-    initial_state = PipeManiaState(board)
-    print(initial_state.board.get_value(0, 0))
-    print("Solution:\n", initial_state.board.print(), sep="")
-
-    """
+    takuzu = PipeMania(board)
     goal_node = greedy_search(takuzu)
     print(goal_node.state.board)
     pass
-    """
+    
 
