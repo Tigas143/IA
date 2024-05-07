@@ -206,55 +206,79 @@ class Board:
 
         return self
     """
+    def connection_right(self, row, col):
+        return self.matrix[row][col] in ("BC", "BB", "VB", "LH", "VD", "FD", "BD")
+    def connection_left(self, row, col):
+        return self.matrix[row][col] in ("BC", "BB", "VC", "LH", "FE", "BE", "VE")
+    def connection_up(self, row, col):
+        return self.matrix[row][col] in ("BC", "VC", "FC", "BE", "LV", "BD", "VD")
+    def connection_down(self, row, col):
+        return self.matrix[row][col] in ("FB", "BB", "VB", "BE", "VE", "LV", "BD")
     def remove_possibilities(self, row, col):
         vertical_move = self.adjacent_vertical_values(row, col)
         horizontal_move = self.adjacent_horizontal_values(row, col)
         possibilities = ()
         acceptable_connections = self.actions_for_cell(row - 1, col)
+        
         if row != 0 and self.possible_moves[(row - 1, col)] == ():
-            acceptable_connections = self.actions_for_cell(row - 1, col)
-            for connection in acceptable_connections[3]:
-                if self.matrix[row][col][0] in connection:
-                    possibilities += (connection,)
-            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[3]:
-                self.possible_moves[(row, col)] = ()
-                self.remaining_pecas.remove((row, col))
+            if self.connection_up(row - 1, col):
+                acceptable_connections = self.actions_for_cell(row - 1, col)
+                for connection in acceptable_connections[3]:
+                    if self.matrix[row][col][0] in connection:
+                        possibilities += (connection,)
+                if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[3]:
+                    self.possible_moves[(row, col)] = ()
+                    self.remaining_pecas.remove((row, col))
+                else:
+                    if possibilities:
+                        self.possible_moves[(row, col)] = possibilities
             else:
-                if possibilities != ():
-                    self.possible_moves[(row, col)] = possibilities
+                self.possible_moves[(row, col)] = [x for x in self.possible_moves[(row, col)] if x not in ("FB", "BB", "VB", "BE", "VE", "LV", "BD")]
+
         if row != self.size - 1 and self.possible_moves[(row + 1, col)] == ():
-            acceptable_connections = self.actions_for_cell(row + 1, col)
-            for connection in acceptable_connections[0]:
-                if self.matrix[row][col][0] in connection:
-                    possibilities += (connection,)
-            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[0]:
-                self.possible_moves[(row, col)] = ()
-                self.remaining_pecas.remove((row, col))
+            if self.connection_down(row + 1, col):
+                acceptable_connections = self.actions_for_cell(row + 1, col)
+                for connection in acceptable_connections[0]:
+                    if self.matrix[row][col][0] in connection:
+                        possibilities += (connection,)
+                if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[0]:
+                    self.possible_moves[(row, col)] = ()
+                    self.remaining_pecas.remove((row, col))
+                else:
+                    if possibilities:
+                        self.possible_moves[(row, col)] = possibilities
             else:
-                if possibilities != ():
-                    self.possible_moves[(row, col)] = possibilities
+                self.possible_moves[(row, col)] = [x for x in self.possible_moves[(row, col)] if x not in ("BC", "VC", "FC", "BE", "LV", "BD", "VD")]
+
         if col != self.size - 1 and self.possible_moves[(row, col + 1)] == ():
-            acceptable_connections = self.actions_for_cell(row, col + 1)
-            for connection in acceptable_connections[1]:
-                if self.matrix[row][col][0] in connection:
-                    possibilities += (connection,)
-            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[1]:
-                self.possible_moves[(row, col)] = ()
-                self.remaining_pecas.remove((row, col))
+            if self.connection_left(row, col+1):
+                acceptable_connections = self.actions_for_cell(row, col + 1)
+                for connection in acceptable_connections[1]:
+                    if self.matrix[row][col][0] in connection:
+                        possibilities += (connection,)
+                if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[1]:
+                    self.possible_moves[(row, col)] = ()
+                    self.remaining_pecas.remove((row, col))
+                else:
+                    if possibilities:
+                        self.possible_moves[(row, col)] = possibilities
             else:
-                if possibilities != ():
-                    self.possible_moves[(row, col)] = possibilities
+                self.possible_moves[(row, col)] = [x for x in self.possible_moves[(row, col)] if x not in ("BC", "BB", "VB", "LH", "VD", "FD", "BD")]
+
         if col != 0 and self.possible_moves[(row, col - 1)] == ():
-            acceptable_connections = self.actions_for_cell(row, col - 1)
-            for connection in acceptable_connections[2]:
-                if self.matrix[row][col][0] in connection:
-                    possibilities += (connection,)
-            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[2]:
-                self.possible_moves[(row, col)] = ()
-                self.remaining_pecas.remove((row, col))
+            if self.connection_right(row, col-1):
+                acceptable_connections = self.actions_for_cell(row, col - 1)
+                for connection in acceptable_connections[2]:
+                    if self.matrix[row][col][0] in connection:
+                        possibilities += (connection,)
+                if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[2]:
+                    self.possible_moves[(row, col)] = ()
+                    self.remaining_pecas.remove((row, col))
+                else:
+                    if possibilities:
+                        self.possible_moves[(row, col)] = possibilities
             else:
-                if possibilities != ():
-                    self.possible_moves[(row, col)] = possibilities
+                self.possible_moves[(row, col)] = [x for x in self.possible_moves[(row, col)] if x not in ("BC", "BB", "VC", "LH", "FE", "BE", "VE")]
 
     def set_cell(self, row, col, position):
         self.matrix[row][col] = position
@@ -481,7 +505,7 @@ class PipeMania(Problem):
 if __name__ == "__main__":
     board = Board.parse_instance()
     takuzu = PipeMania(board)
-    goal_node = depth_first_tree_search(takuzu)
+    goal_node = greedy_search(takuzu)
     print("Solution:\n", goal_node.state.board.print(), sep="")
     pass
     
