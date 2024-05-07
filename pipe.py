@@ -89,69 +89,69 @@ class Board:
         
         for col in range(self.size):
             for row in range(self.size):
-                possibility = None
+                possibility = ()
                 if (col == 0 and (row == 0 or row == self.size - 1)) or (col == self.size - 1 and (row == 0 or row == self.size - 1)):
                     if self.matrix[row][col][0] == "B" or self.matrix[row][col][0] == "L":
                         self.invalid = True
                         return self
                     elif self.matrix[row][col][0] == "V":
                         if (col == 0 and row == 0):
-                            possibility = 0
+                            possibility = ()
                             self.set_cell(row, col, "VB")
                         elif (col == self.size - 1 and row == 0):
-                            possibility = 0
+                            possibility = ()
                             self.set_cell(row, col, "VE")
                         elif (col == 0 and row == self.size - 1):
-                            possibility = 0
+                            possibility = ()
                             self.set_cell(row, col, "VD")
                         elif (col == self.size - 1 and row == self.size - 1):
-                            possibility = 0
+                            possibility = ()
                             self.set_cell(row, col, "VC")
                     else:
-                        possibility = 4
+                        possibility = self.get_all_possibilities(row,col)
                         self.remaining_pecas.append((row, col))
                 elif row == 0:
                     if self.matrix[row][col][0] == "B":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "BB")
                     elif self.matrix[row][col][0] == "L":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "LH")
                     else:
-                        possibility = 4
+                        possibility = self.get_all_possibilities(row,col)
                         self.remaining_pecas.append((row, col))
                 elif row == self.size - 1:
                     if self.matrix[row][col][0] == "B":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "BC")
                     elif self.matrix[row][col][0] == "L":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "LH")
                     else:
-                        possibility = 4
+                        possibility = self.get_all_possibilities(row,col)
                         self.remaining_pecas.append((row, col))
                 elif col == 0:
                     if self.matrix[row][col][0] == "B":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "BD")
                     elif self.matrix[row][col][0] == "L":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "LV")
                     else:
-                        possibility = 4
+                        possibility = self.get_all_possibilities(row,col)
                         self.remaining_pecas.append((row, col))
                 elif col == self.size - 1:
                     if self.matrix[row][col][0] == "B":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "BE")
                     elif self.matrix[row][col][0] == "L":
-                        possibility = 0
+                        possibility = ()
                         self.set_cell(row, col, "LV")
                     else:
-                        possibility = 4
+                        possibility = self.get_all_possibilities(row,col)
                         self.remaining_pecas.append((row, col))
                 else:
-                    possibility = 4
+                    possibility = self.get_all_possibilities(row,col)
                     self.remaining_pecas.append((row, col))
 
                 self.possible_moves[(row, col)] = possibility
@@ -201,47 +201,51 @@ class Board:
     def remove_possibilities(self, row, col):
         vertical_move = self.adjacent_vertical_values(row, col)
         horizontal_move = self.adjacent_horizontal_values(row, col)
-        possibilities = 0
+        possibilities = ()
         acceptable_connections = self.actions_for_cell(row - 1, col)
-        if row != 0 and self.possible_moves[(row - 1, col)] == 0:
+        if row != 0 and self.possible_moves[(row - 1, col)] == ():
             acceptable_connections = self.actions_for_cell(row - 1, col)
-            concatenated_str = ''.join(acceptable_connections[3])
-            possibilities = max(possibilities, concatenated_str.count(self.matrix[row][col][0]))
-            if possibilities == 1 and self.matrix[row][col] in acceptable_connections[3]:
-                self.possible_moves[(row, col)] = 0
+            for connection in acceptable_connections[3]:
+                if self.matrix[row][col][0] in connection:
+                    possibilities += (connection,)
+            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[3]:
+                self.possible_moves[(row, col)] = ()
                 self.remaining_pecas.remove((row, col))
             else:
-                if possibilities != 0:
+                if possibilities != ():
                     self.possible_moves[(row, col)] = possibilities
-        if row != self.size - 1 and self.possible_moves[(row + 1, col)] == 0:
+        if row != self.size - 1 and self.possible_moves[(row + 1, col)] == ():
             acceptable_connections = self.actions_for_cell(row + 1, col)
-            concatenated_str = ''.join(acceptable_connections[0])
-            possibilities = max(possibilities, concatenated_str.count(self.matrix[row][col][0]))
-            if possibilities == 1 and self.matrix[row][col] in acceptable_connections[0]:
-                self.possible_moves[(row, col)] = 0
+            for connection in acceptable_connections[0]:
+                if self.matrix[row][col][0] in connection:
+                    possibilities += (connection,)
+            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[0]:
+                self.possible_moves[(row, col)] = ()
                 self.remaining_pecas.remove((row, col))
             else:
-                if possibilities != 0:
+                if possibilities != ():
                     self.possible_moves[(row, col)] = possibilities
-        if col != self.size - 1 and self.possible_moves[(row, col + 1)] == 0:
+        if col != self.size - 1 and self.possible_moves[(row, col + 1)] == ():
             acceptable_connections = self.actions_for_cell(row, col + 1)
-            concatenated_str = ''.join(acceptable_connections[1])
-            possibilities = max(possibilities, concatenated_str.count(self.matrix[row][col][0]))
-            if possibilities == 1 and self.matrix[row][col] in acceptable_connections[1]:
-                self.possible_moves[(row, col)] = 0
+            for connection in acceptable_connections[1]:
+                if self.matrix[row][col][0] in connection:
+                    possibilities += (connection,)
+            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[1]:
+                self.possible_moves[(row, col)] = ()
                 self.remaining_pecas.remove((row, col))
             else:
-                if possibilities != 0:
+                if possibilities != ():
                     self.possible_moves[(row, col)] = possibilities
-        if col != 0 and self.possible_moves[(row, col - 1)] == 0:
+        if col != 0 and self.possible_moves[(row, col - 1)] == ():
             acceptable_connections = self.actions_for_cell(row, col - 1)
-            concatenated_str = ''.join(acceptable_connections[2])
-            possibilities = max(possibilities, concatenated_str.count(self.matrix[row][col][0]))
-            if possibilities == 1 and self.matrix[row][col] in acceptable_connections[2]:
-                self.possible_moves[(row, col)] = 0
+            for connection in acceptable_connections[2]:
+                if self.matrix[row][col][0] in connection:
+                    possibilities += (connection,)
+            if len(possibilities) == 1 and self.matrix[row][col] in acceptable_connections[2]:
+                self.possible_moves[(row, col)] = ()
                 self.remaining_pecas.remove((row, col))
             else:
-                if possibilities != 0:
+                if possibilities != ():
                     self.possible_moves[(row, col)] = possibilities
 
     def set_cell(self, row, col, position):
@@ -305,7 +309,17 @@ class Board:
                 acceptable_up_conections = ("FB", "BB", "BE", "BD", "VE", "VB", "LV")
                 acceptable_down_conections = ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
         return (acceptable_up_conections, acceptable_right_conections, acceptable_left_conections, acceptable_down_conections)
-  
+    def get_all_possibilities(self, row, col):
+        move = self.matrix[row][col]
+        if move[0] == "F":
+            return ("FC","FB", "FE", "FD")
+        if move[0] == "B":
+            return ("BC","BB", "BE", "BD")
+        if move[0] == "V":
+            return ("VC","VB", "VE", "VD")
+        if move[0] == "L":
+            return ("LH", "LV")
+      
     def check_frontiers(self, row, col):
         move = self.matrix[row][col]
         if row == 0 and col == 0:
@@ -451,14 +465,14 @@ class PipeMania(Problem):
 
     def actions(self, state: PipeManiaState):
         """Retorna uma lista de ações que podem ser executadas a
-        partir do estado passado como argumento.
-        if state.board.invalid or state.board.get_remaining_cells_count() == 0:
+        partir do estado passado como argumento."""
+        if state.board.invalid or state.board.get_remaining_pecas_count() == 0:
             return []
 
         row, col = state.board.get_next_cell()
 
         possibilities = state.board.get_possibilities_for_cell(row, col)
-        return map(lambda number: (row, col, number), possibilities)"""
+        return map(lambda number: (row, col, number), possibilities)
         pass
 
     def result(self, state: PipeManiaState, action):
