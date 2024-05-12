@@ -7,7 +7,7 @@
 # 00000 Nome2
 
 """
-    É preciso arranjar uma maneira mais bonnita de so dar cet_cell no rodar_peca (eu pus no
+    É preciso arranjar uma maneira mais bonnita de so dar set_cell no rodar_peca (eu pus no
 possible_values uma string tipo "0XX" para indicar que só há 1 possibilidade para encaixar com o que
 ja estava no codigo, it works, mas nao é boa pratica de certeza)
     Ter em atençao a parte do remaining_cells estar ordenado por possibilidades, atualmente 
@@ -216,7 +216,6 @@ class Board:
         return 0
 
     def remove_possibilities(self, row, col):
-
         possibilities = ()
 
         if row != 0 and (self.possible_moves[(row - 1, col)] == () or self.possible_moves[(row - 1, col)][0] == "0") :
@@ -310,10 +309,9 @@ class Board:
 
         if len(possibilities) == 1:
             self.possible_moves[(row, col)] = "0" + possibilities[0]
-            """
-            self.remaining_pecas.remove((row, col))
+            
             self.set_cell(row, col, possibilities[0])
-            """
+            
 
         else:
             if possibilities:
