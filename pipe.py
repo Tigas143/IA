@@ -68,6 +68,7 @@ class Board:
         self.matrix = matrix
         self.size = len(matrix)
         self.remaining_pecas = []
+        self.count_actions = 0
         self.invalid = False
     
     def print(self):
@@ -89,6 +90,7 @@ class Board:
         self.breakpoint()
         new_board = Board(new_matrix)
         new_board.possible_moves = self.possible_moves
+        new_board.count_actions = self.count_actions
         if len(self.possible_moves[(row, col)]) == 1 or self.possible_moves[(row, col)][0] == "0":
             print(row,col)
             move = self.possible_moves[(row, col)][1] + self.possible_moves[(row, col)][2]
@@ -127,7 +129,7 @@ class Board:
         """Calculate the values of the internal state to be used
         in the initial board."""
         self.remaining_pecas = []
-        
+        self.count_actions = 0
         # Store possibilities for each cell in a dictionary
         self.possible_moves = {}
         
@@ -136,7 +138,7 @@ class Board:
                 possibility = ()
                 possibility = self.check_frontiers(row, col)
                 num_possibilities = len(possibility)
-
+                self.count_actions += num_possibilities
                 if num_possibilities == 1:
                     self.set_cell(row, col, possibility[0])
                     self.possible_moves[(row, col)] = ()
@@ -217,7 +219,7 @@ class Board:
 
     def remove_possibilities(self, row, col):
         possibilities = ()
-
+        initial_possibilities = len(self.possible_moves[(row,col)])
         if row != 0 and (self.possible_moves[(row - 1, col)] == () or self.possible_moves[(row - 1, col)][0] == "0") :
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
@@ -309,7 +311,7 @@ class Board:
 
         if len(possibilities) == 1:
             self.possible_moves[(row, col)] = "0" + possibilities[0]
-            
+            self.count_actions -= initial_possibilities - 1
             self.set_cell(row, col, possibilities[0])
             
 
@@ -319,6 +321,7 @@ class Board:
                 self.possible_moves[(row, col)] = possibilities
                 num_possibilities = len(possibilities)
                 if len(old_possibilities) != num_possibilities:
+                    self.count_actions -= initial_possibilities - num_possibilities
                     self.remaining_pecas.remove((row, col))
                     pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
                     self.remaining_pecas.insert(pos_to_insert, (row, col))
@@ -512,16 +515,16 @@ class PipeMania(Problem):
         return state.board.get_remaining_pecas_count() == 0
 
     def h(self, node: Node):
-        """Função heuristica utilizada para a procura A*.
+        """Função heuristica utilizada para a procura A*."""
         board = node.state.board
-        return board.count_pos_with_two_actions"""
+        return board.count_actions
         pass
 
 
 if __name__ == "__main__":
     board = Board.parse_instance()
-    takuzu = PipeMania(board)
-    goal_node = greedy_search(takuzu)
+    pipemania = PipeMania(board)
+    goal_node = astar_search(pipemania)
     print("Solution:\n", goal_node.state.board.print(), sep="")
     pass
     
