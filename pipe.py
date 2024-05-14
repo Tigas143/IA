@@ -27,7 +27,7 @@ esta ordenada, portanto ate agora nao deu erro porque nao apareceu nenhuma exerc
     Portanto faria mais sentido adaptar o calcula_next_moves a alterar as possibilidades adjacentes de todas as celulas
     que possam ter ficado com a sua possibilidade a 1
 """
-
+import copy
 import getpass
 import sys
 import bisect
@@ -68,6 +68,9 @@ class Board:
         self.matrix = matrix
         self.size = len(matrix)
         self.remaining_pecas = []
+        self.trial_pecas = []
+        self.possible_moves = {}
+        self.remaining_possible_moves = {}
         self.count_actions = 0
         self.invalid = False
     
@@ -81,20 +84,19 @@ class Board:
     
     
     def rodar_peça(self, row: int, col: int, peca: str):
-
-        #print("rodar peca:", peca, "row: ", row, "col: ", col)
-        #self.breakpoint()
-       
+        
         new_matrix = [row[:] for row in self.matrix]  # Creating a deep copy of the matrix
         new_matrix[row][col] = peca
-       #print("Pecas para rodar:",self.remaining_pecas)
-        #print("roda peca: ", row,col, peça)
 
-        #self.breakpoint()
         new_board = Board(new_matrix)
         new_board.count_actions = self.count_actions
         new_board.possible_moves = self.possible_moves
-        if len(self.possible_moves[(row, col)]) == 1 or self.possible_moves[(row, col)][0] == "0":
+        new_board.trial_pecas = self.trial_pecas
+        new_board.remaining_possible_moves = self.remaining_possible_moves
+        
+        if self.trial_pecas != []:
+            new_board.trial_pecas.insert(0, (row,col, 0))
+        if len(self.possible_moves[(row, col)]) != 0 and (len(self.possible_moves[(row, col)]) == 1 or self.possible_moves[(row, col)][0] == "0"):
             move = self.possible_moves[(row, col)][1:]
             self.count_actions -= 1
             new_board.set_cell(row, col, move)
@@ -107,17 +109,18 @@ class Board:
             print("if new_board.remaining_pecas", new_board.remaining_pecas)
             """
             
-        else:
+        elif self.possible_moves[(row, col)][-1] == peca:
             #with open('saida.txt', 'w') as arquivo:
             # Redireciona a saída do método print para o arquivo
             #    arquivo.write(self.print())
             #exit()
-            self.remaining_pecas.remove((row, col))
-            num_possibilities = len(self.possible_moves[(row, col)])
-            pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
-            #new_remaining_pecas = self.remaining_pecas[1:] + [first_element]
-            self.remaining_pecas.insert(pos_to_insert, (row, col))
-            new_board.remaining_pecas = self.remaining_pecas
+            move = self.possible_moves[(row, col)][-1]
+            new_board.remaining_possible_moves = copy.deepcopy(self.possible_moves)
+            new_board.remaining_possible_moves[(row, col)] = self.possible_moves[(row, col)][:-1]
+            new_board.trial_pecas.insert(0, (row,col, 1))
+            new_board.set_cell(row, col, move)
+            new_board.possible_moves[(row, col)] = ()
+            new_board.remaining_pecas = self.remaining_pecas[1:]
             """
             print("\n")
             print("else", row, col)
@@ -158,8 +161,7 @@ class Board:
     def calculate_next_possible_moves(self, row: int, col: int):
 
         """Recebe a posição que foi alterada, de forma a atualizar as possibilidades
-        das peças para as posições afetadas"""  
-
+        das peças para as posições afetadas""" 
         if (row, col) in self.remaining_pecas:
             self.remove_possibilities(row, col)
         if (row + 1, col) in self.remaining_pecas:
@@ -316,12 +318,25 @@ class Board:
         if move in ("FD", "BC", "BD", "BB", "VB", "VD", "LH"):
             return 1
         return 0
-
+    def voltar_atras(self):
+        self.possible_moves= self.remaining_possible_moves
+        for (row,col, code) in self.trial_pecas:
+            num_possibilities = len(self.remaining_possible_moves[(row, col)])
+            pos_to_insert = bisect.bisect_right([len(self.remaining_possible_moves[(row, col)]) for pos in self.remaining_pecas], num_possibilities)
+            #new_remaining_pecas = self.remaining_pecas[1:] + [first_element]
+            self.remaining_pecas.insert(pos_to_insert, (row, col))
+            self.trial_pecas = self.trial_pecas[1:]
+            if code == 1:
+                break
+        
+    
     def remove_possibilities(self, row, col):
-
+        count_fixed_pecas = 0
         possibilities = ()
+        
 
         if row != 0 and (self.possible_moves[(row - 1, col)] == () or self.possible_moves[(row - 1, col)][0] == "0") :
+            count_fixed_pecas+=1
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_down_pipe(row - 1,col):
@@ -340,6 +355,7 @@ class Board:
                         possibilities += (possibility,)
 
         if row != self.size - 1 and (self.possible_moves[(row + 1, col)] == () or self.possible_moves[(row + 1, col)][0] == "0") :
+            count_fixed_pecas+=1
             cant_be_possibility = ()
             possibilities_aux = ()
             limits = self.check_frontiers(row, col)
@@ -363,6 +379,7 @@ class Board:
                 possibilities = possibilities_aux
 
         if col != self.size - 1 and (self.possible_moves[(row, col + 1)] == () or self.possible_moves[(row, col + 1)][0] == "0"):
+            count_fixed_pecas+=1
             possibilities_aux = ()
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
@@ -388,6 +405,7 @@ class Board:
                 possibilities = possibilities_aux
 
         if col != 0 and (self.possible_moves[(row, col - 1)] == () or self.possible_moves[(row, col - 1)][0] == "0"):
+            count_fixed_pecas+=1
             possibilities_aux = ()
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
@@ -434,12 +452,17 @@ class Board:
                     pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], len_new_possibilities)
                     self.remaining_pecas.insert(pos_to_insert, (row, col))
                 return 0
+            else:
+                if count_fixed_pecas == 4:
+                    self.voltar_atras()
+                    return 0
+
             """
             else: 
                 abort
             """
 
-
+    
     def set_cell(self, row, col, position):
         self.matrix[row][col] = position
     
@@ -633,6 +656,8 @@ if __name__ == "__main__":
     board = Board.parse_instance()
     takuzu = PipeMania(board)
     goal_node = greedy_search(takuzu)
-    print(goal_node.state.board.print(), sep="")
-    pass
+    print(goal_node.state.board.print())
+    # Create a file and write the board's text representation to it
+    with open("output.txt", "w") as file:
+        file.write(str(goal_node.state.board.print()))
     
