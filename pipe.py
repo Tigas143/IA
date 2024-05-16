@@ -133,9 +133,11 @@ class Board:
             #exit()
             move = self.possible_moves[(row, col)][-1]
             print("move", move)
+            print(self.possible_moves)
             self.breakpoint()
-            new_board.remaining_possible_moves = copy.deepcopy(self.possible_moves)
-            new_board.remaining_possible_moves[(row, col)] = self.possible_moves[(row, col)][:-1]
+            
+            new_board.remaining_possible_moves[(row, col)] = copy.deepcopy(self.possible_moves)
+            new_board.remaining_possible_moves[(row, col)][(row, col)] = self.possible_moves[(row, col)][:-1]
             new_board.trial_pecas.insert(0, (row,col, 1))
             new_board.set_cell(row, col, move)
             new_board.possible_moves[(row, col)] = ()
@@ -143,7 +145,8 @@ class Board:
             new_board.remove_all_adjacent_possibilities(row, col)
             
         return new_board
-
+            
+                
     def remove_all_adjacent_possibilities(self, row: int, col: int):
 
         if (row + 1, col) in self.remaining_pecas and len(self.possible_moves[(row + 1, col)]) != 1:
@@ -257,9 +260,10 @@ class Board:
     
 
     def voltar_atras(self):
-        self.possible_moves = self.remaining_possible_moves
-        row_aux, col_aux = "",""
-
+        for (row, col, code) in self.trial_pecas:
+            if code == 1:
+                self.possible_moves = self.remaining_possible_moves[(row,col)]
+                break
         print("voltar atras")
         print("4,4: 6,5: 8,4: 7,5: 6,4")
         print(self.possible_moves[(4,4)], self.possible_moves[(6,5)],
@@ -267,17 +271,12 @@ class Board:
               self.possible_moves[(6,4)])
         self.breakpoint()
         for (row, col, code) in self.trial_pecas:
-            num_possibilities = len(self.remaining_possible_moves[(row, col)])
-            pos_to_insert = bisect.bisect_right([len(self.remaining_possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
+            num_possibilities = len(self.possible_moves[(row, col)])
+            pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
             self.remaining_pecas.insert(pos_to_insert, (row, col))
             self.trial_pecas = self.trial_pecas[1:]
             if code == 1:
-                row_aux = row
-                col_aux = col
                 break
-        print("odsko",row_aux, col_aux)
-        if len(self.possible_moves[(row_aux, col_aux)]) == 1:
-            return 1
         return 0
 
     def remove_possibilities(self, row, col):
@@ -594,4 +593,7 @@ if __name__ == "__main__":
     takuzu = PipeMania(board)
     goal_node = greedy_search(takuzu)
     print(goal_node.state.board.print(), sep="")
+    # Create a file and write the board's text representation to it
+    with open("output.txt", "w") as file:
+        file.write(str(goal_node.state.board.print()))
     
