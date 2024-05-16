@@ -5,7 +5,8 @@
 # Grupo 00:
 # 00000 Nome1
 # 00000 Nome2
-
+#15,20,35,50
+#15,20,50
 """
     É preciso arranjar uma maneira mais bonnita de so dar cet_cell no rodar_peca (eu pus no
 possible_values uma string tipo "0XX" para indicar que só há 1 possibilidade para encaixar com o que
@@ -68,9 +69,11 @@ class Board:
         self.matrix = matrix
         self.size = len(matrix)
         self.remaining_pecas = []
+
         self.trial_pecas = []
         self.possible_moves = {}
         self.remaining_possible_moves = {}
+
         self.count_actions = 0
         self.invalid = False
     
@@ -84,99 +87,86 @@ class Board:
     
     
     def rodar_peça(self, row: int, col: int, peca: str):
-        
+
+        #print("rodar peca:", peca, "row: ", row, "col: ", col)
+        #self.breakpoint()
+        #print("valores da row 1, col 0", self.possible_moves[(1,0)], self.get_value(1,0))
+       
         new_matrix = [row[:] for row in self.matrix]  # Creating a deep copy of the matrix
         new_matrix[row][col] = peca
+        #print("Pecas para rodar:",self.remaining_pecas)
+        #print("roda peca: ", row,col, peça)
 
+        #self.breakpoint()
         new_board = Board(new_matrix)
         new_board.count_actions = self.count_actions
         new_board.possible_moves = self.possible_moves
+
         new_board.trial_pecas = self.trial_pecas
         new_board.remaining_possible_moves = self.remaining_possible_moves
         
-        if self.trial_pecas != []:
-            new_board.trial_pecas.insert(0, (row,col, 0))
-        if len(self.possible_moves[(row, col)]) != 0 and (len(self.possible_moves[(row, col)]) == 1 or self.possible_moves[(row, col)][0] == "0"):
-            move = self.possible_moves[(row, col)][1:]
+        #if self.trial_pecas != []:
+        #    new_board.trial_pecas.insert(0, (row,col, 0))
+
+        if len(self.possible_moves[(row, col)]) == 1:
+            move = self.possible_moves[(row, col)][0]
             self.count_actions -= 1
             new_board.set_cell(row, col, move)
             new_board.possible_moves[(row, col)] = ()
             new_board.remaining_pecas = self.remaining_pecas[1:]
+            if self.trial_pecas != []:
+                new_board.trial_pecas.insert(0, (row,col, 0))
             """
             print("\n")
             print("if", row, col)
             print("if self.remaining_pecas", self.remaining_pecas)
             print("if new_board.remaining_pecas", new_board.remaining_pecas)
             """
-            
         elif self.possible_moves[(row, col)][-1] == peca:
-            #with open('saida.txt', 'w') as arquivo:
+            # print("hi")
+            print("row", row, "col", col, "possible moves",self.possible_moves[(row, col)])
+            # with open('saida.txt', 'w') as arquivo:
+            #    arquivo.write(self.print())
+            # with open('saida.txt', 'w') as arquivo:
             # Redireciona a saída do método print para o arquivo
             #    arquivo.write(self.print())
             #exit()
             move = self.possible_moves[(row, col)][-1]
+            print("move", move)
+            self.breakpoint()
             new_board.remaining_possible_moves = copy.deepcopy(self.possible_moves)
             new_board.remaining_possible_moves[(row, col)] = self.possible_moves[(row, col)][:-1]
             new_board.trial_pecas.insert(0, (row,col, 1))
             new_board.set_cell(row, col, move)
             new_board.possible_moves[(row, col)] = ()
             new_board.remaining_pecas = self.remaining_pecas[1:]
-            """
-            print("\n")
-            print("else", row, col)
-            print("else self.remaining_pecas", self.remaining_pecas)
-            print("else new_board.remaining_pecas", new_board.remaining_pecas)
-            """
-
-        #print("novo remaining_pecas", new_board.remaining_pecas)
-        #print("dicionario do novo remaing_pecas", self.possible_moves)
-        #print(row, col)
-        #print("new_board", new_board.remaining_pecas)
-        #print("self_board", self.remaining_pecas)
-        new_board.calculate_next_possible_moves(row, col)
-        #print("remaining_pecas apos calculate_next_possible_moves ", new_board.remaining_pecas)
-        #print("dicionario apos calculate_next_possible_moves", self.possible_moves)
+            new_board.remove_all_adjacent_possibilities(row, col)
+            
         return new_board
-    """
-    def remove_possibilities_adjacencies(self, row: int, col: int):
-        values = () 
-        if (row + 1, col) in self.remaining_pecas:
-            self.remove_possibilities(row + 1, col)
-            if self.possible_moves[(row + 1, col)] == "0":
-                values += (1,)
-        elif (row - 1, col) in self.remaining_pecas:
-            self.remove_possibilities(row - 1, col)
-            if self.possible_moves[(row - 1, col)] == "0":
-                values += (2,)
-        elif (row, col + 1) in self.remaining_pecas:
-            self.remove_possibilities(row, col + 1)
-            if self.possible_moves[(row, col + 1)] == "0":
-                values += (3,)
-        elif (row, col - 1) in self.remaining_pecas:
-            self.remove_possibilities(row, col - 1)
-            if self.possible_moves[(row, col - 1)] == "0":
-                values += (4,)
-    """
 
-    def calculate_next_possible_moves(self, row: int, col: int):
+    def remove_all_adjacent_possibilities(self, row: int, col: int):
 
-        """Recebe a posição que foi alterada, de forma a atualizar as possibilidades
-        das peças para as posições afetadas""" 
-        if (row, col) in self.remaining_pecas:
-            self.remove_possibilities(row, col)
-        if (row + 1, col) in self.remaining_pecas:
-            self.remove_possibilities(row + 1, col)
-        if (row - 1, col) in self.remaining_pecas:
-            self.remove_possibilities(row - 1, col)
-        if (row, col + 1) in self.remaining_pecas:
-            self.remove_possibilities(row, col + 1)
-        if (row, col - 1) in self.remaining_pecas:
-            self.remove_possibilities(row, col - 1)
+        if (row + 1, col) in self.remaining_pecas and len(self.possible_moves[(row + 1, col)]) != 1:
+            value = self.remove_possibilities(row + 1, col)
+            if value:
+                self.remove_all_adjacent_possibilities(row + 1, col)
+        if (row - 1, col) in self.remaining_pecas and len(self.possible_moves[(row - 1, col)]) != 1:
+            value = self.remove_possibilities(row - 1, col)
+            if value:
+                self.remove_all_adjacent_possibilities(row - 1, col)
+        if (row, col + 1) in self.remaining_pecas and len(self.possible_moves[(row, col + 1)]) != 1:
+            value = self.remove_possibilities(row, col + 1)
+            if value:
+                self.remove_all_adjacent_possibilities(row, col + 1)
+        if (row, col - 1) in self.remaining_pecas and len(self.possible_moves[(row, col - 1)]) != 1:
+            value = self.remove_possibilities(row, col - 1)
+            if value:
+                self.remove_all_adjacent_possibilities(row, col - 1)
 
 
     def calculate_state(self):
-        """Calculate the values of the internal state to be used
-        in the initial board."""
+        """ Calculate the values of the internal state to be used
+        in the initial board. """
         self.remaining_pecas = []
         
         # Store possibilities for each cell in a dictionary
@@ -207,20 +197,10 @@ class Board:
                 else:
                     self.possible_moves[(row, col)] = possibility
                     self.remaining_pecas.append((row, col))
-
-        values = 1   
-        hi = ()
-        lenght = len(self.remaining_pecas)
-        while values == 1:
-            aux = 0
-            for (row,col) in self.remaining_pecas[:]:
-                aux += 1
-                values = self.remove_possibilities(row, col)
-                if values == 1 and (row, col) not in hi:
-                    hi += ((row, col),)
-                    break
-            if lenght == aux:
-                break
+        
+        for row in range(self.size):
+            for col in range(self.size): 
+                self.remove_all_adjacent_possibilities(row, col)
         #print(self.possible_moves)
         #print("\n")
         #print(self.remaining_pecas)
@@ -228,218 +208,178 @@ class Board:
         return self
    
     def acceptable_up_connections(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move == "F":
-                return ("BC", "BB", "VB", "LH", "VD", "BD")
-            return ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
-
-        move = self.get_value(row, col)
-        if move == "F":
-            return ("BC", "BB", "VB", "LH", "VD", "BD")
         return ("FB", "BB", "BE", "BD", "VB", "VE", "LV")
 
     def acceptable_down_connections(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move == "F":
-                return ("BC", "BE", "BD", "VC", "VD", "LV")
-            return ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
-
-        move = self.get_value(row, col)
-        if move == "F":
-            return ("BC", "BE", "BD", "VC", "VD", "LV")
         return ("FC", "BC", "BE", "BD", "VC", "VD", "LV")
     
     def acceptable_left_connections(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move == "F":
-                return ("BC", "BB", "BD", "VB", "VD", "LH")
-            return ("FD", "BC", "BD", "BB", "VB", "VD", "LH")
-
-        move = self.get_value(row, col)
-        if move == "F":
-            return ("BC", "BB", "BD", "VB", "VD", "LH")
         return ("FD", "BC", "BD", "BB", "VB", "VD", "LH")
     
     def acceptable_right_connections(self, row, col):
-        if self.possible_moves[(row,col)] != () and  self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move == "F":
-                return ("BC", "BB", "BE", "VC", "VE", "LH")
-            return ("FE", "BC", "BE", "BB","VC", "VE", "LH")
-        
-        move = self.get_value(row, col)
-        if move == "F":
-            return ("BC", "BB", "BE", "VC", "VE", "LH")
         return ("FE", "BC", "BE", "BB","VC", "VE", "LH")
     
     def has_open_down_pipe(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move in ("FB", "BB", "BE", "BD", "VB", "VE", "LV"):
-                return 1
-            return 0
-        move = self.get_value(row, col)
+        if self.possible_moves[(row, col)] == ():
+            move = self.get_value(row, col)
+        else:
+            move = self.possible_moves[(row,col)][0]
         if move in ("FB", "BB", "BE", "BD", "VB", "VE", "LV"):
             return 1
         return 0
     
     def has_open_up_pipe(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move in ("FC", "BC", "BE", "BD", "VC", "VD", "LV"):
-                return 1
-            return 0
-        move = self.get_value(row, col)
+        if self.possible_moves[(row, col)] == ():
+            move = self.get_value(row, col)
+        else:
+            move = self.possible_moves[(row,col)][0]
         if move in ("FC", "BC", "BE", "BD", "VC", "VD", "LV"):
             return 1
         return 0
     
     def has_open_left_pipe(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move in ("FE", "BC", "BE", "BB", "VC", "VE", "LH"):
-                return 1
-            return 0
-        move = self.get_value(row, col)
+        if self.possible_moves[(row, col)] == ():
+            move = self.get_value(row, col)
+        else:
+            move = self.possible_moves[(row,col)][0]
         if move in ("FE", "BC", "BE", "BB", "VC", "VE", "LH"):
             return 1
         return 0
 
     def has_open_right_pipe(self, row, col):
-        if self.possible_moves[(row,col)] != () and self.possible_moves[(row,col)][0] == "0":
-            move = self.possible_moves[(row,col)][1:]
-            if move in ("FD", "BC", "BD", "BB", "VB", "VD", "LH"):
-                return 1
-            return 0
-        move = self.get_value(row, col)
+        if self.possible_moves[(row, col)] == ():
+            move = self.get_value(row, col)
+        else:
+            move = self.possible_moves[(row,col)][0]
         if move in ("FD", "BC", "BD", "BB", "VB", "VD", "LH"):
             return 1
         return 0
+    
+
     def voltar_atras(self):
-        self.possible_moves= self.remaining_possible_moves
-        for (row,col, code) in self.trial_pecas:
+        self.possible_moves = self.remaining_possible_moves
+        row_aux, col_aux = "",""
+
+        print("voltar atras")
+        print("4,4: 6,5: 8,4: 7,5: 6,4")
+        print(self.possible_moves[(4,4)], self.possible_moves[(6,5)],
+              self.possible_moves[(8,4)], self.possible_moves[(7,5)],
+              self.possible_moves[(6,4)])
+        self.breakpoint()
+        for (row, col, code) in self.trial_pecas:
             num_possibilities = len(self.remaining_possible_moves[(row, col)])
-            pos_to_insert = bisect.bisect_right([len(self.remaining_possible_moves[(row, col)]) for pos in self.remaining_pecas], num_possibilities)
-            #new_remaining_pecas = self.remaining_pecas[1:] + [first_element]
+            pos_to_insert = bisect.bisect_right([len(self.remaining_possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
             self.remaining_pecas.insert(pos_to_insert, (row, col))
             self.trial_pecas = self.trial_pecas[1:]
             if code == 1:
+                row_aux = row
+                col_aux = col
                 break
-        
-    
+        print("odsko",row_aux, col_aux)
+        if len(self.possible_moves[(row_aux, col_aux)]) == 1:
+            return 1
+        return 0
+
     def remove_possibilities(self, row, col):
         count_fixed_pecas = 0
         possibilities = ()
-        
 
-        if row != 0 and (self.possible_moves[(row - 1, col)] == () or self.possible_moves[(row - 1, col)][0] == "0") :
-            count_fixed_pecas+=1
+        if row != 0 and (self.possible_moves[(row - 1, col)] == () or len(self.possible_moves[(row - 1, col)]) == 1):
+            count_fixed_pecas += 1
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_down_pipe(row - 1,col):
-                for connection in self.acceptable_down_connections(row - 1, col):
-                    if self.get_value(row, col)[0] in connection and connection in limits:
-                        possibilities += (connection,)
-            else:
                 if self.get_value(row - 1,col)[0] == "F" and self.get_value(row, col)[0] == "F":
                     cant_be_possibility = "FC"
-                else:
-                    for connection in self.acceptable_down_connections(row - 1, col):
-                        if self.get_value(row, col)[0] in connection:
-                            cant_be_possibility += (connection,)
+                for connection in self.acceptable_down_connections(row - 1, col):
+                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                        possibilities += (connection,)
+            else:
+                for connection in self.acceptable_down_connections(row - 1, col):
+                    if self.get_value(row, col)[0] in connection:
+                        cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
                         possibilities += (possibility,)
 
-        if row != self.size - 1 and (self.possible_moves[(row + 1, col)] == () or self.possible_moves[(row + 1, col)][0] == "0") :
-            count_fixed_pecas+=1
+        if row != self.size - 1 and (self.possible_moves[(row + 1, col)] == () or len(self.possible_moves[(row + 1, col)]) == 1):
+            count_fixed_pecas += 1
             cant_be_possibility = ()
             possibilities_aux = ()
             limits = self.check_frontiers(row, col)
-            if self.has_open_up_pipe(row + 1,col):
+            if self.has_open_up_pipe(row + 1,col):   
+                if self.get_value(row + 1,col)[0] == "F" and self.get_value(row, col)[0] == "F":
+                    cant_be_possibility = "FB"         
                 for connection in self.acceptable_up_connections(row + 1, col):
-                    if self.get_value(row, col)[0] in connection and connection in limits:
+                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
                         possibilities_aux += (connection,)
             else:
-                if self.get_value(row + 1,col)[0] == "F" and self.get_value(row, col)[0] == "F":
-                    cant_be_possibility = "FB"
-                else:
-                    for connection in self.acceptable_up_connections(row + 1, col):
-                        if self.get_value(row, col)[0] in connection:
-                            cant_be_possibility += (connection,)
+                for connection in self.acceptable_up_connections(row + 1, col):
+                    if self.get_value(row, col)[0] in connection:
+                        cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
                         possibilities_aux += (possibility,)
-            if possibilities != ():
+            if count_fixed_pecas > 1:
                 possibilities = tuple(filter(lambda x: x in possibilities_aux, possibilities))
             else:
                 possibilities = possibilities_aux
 
-        if col != self.size - 1 and (self.possible_moves[(row, col + 1)] == () or self.possible_moves[(row, col + 1)][0] == "0"):
-            count_fixed_pecas+=1
+        if col != self.size - 1 and (self.possible_moves[(row, col + 1)] == () or len(self.possible_moves[(row, col + 1)]) == 1):
+            count_fixed_pecas += 1
             possibilities_aux = ()
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
 
             if self.has_open_left_pipe(row, col + 1):
-                move = self.get_value(row,col)
-                for connection in self.acceptable_left_connections(row, col + 1):
-                    if self.get_value(row,col)[0] in connection and connection in limits:
-                        possibilities_aux += (connection,)
-            else:
                 if self.get_value(row, col + 1)[0] == "F" and self.get_value(row, col)[0] == "F":
                     cant_be_possibility = "FD"
-                else:
-                    for connection in self.acceptable_left_connections(row, col + 1):
-                        if self.get_value(row, col)[0] in connection:
-                            cant_be_possibility += (connection,)
+                for connection in self.acceptable_left_connections(row, col + 1):
+                    if self.get_value(row,col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                        possibilities_aux += (connection,)
+                
+            else:
+                for connection in self.acceptable_left_connections(row, col + 1):
+                    if self.get_value(row, col)[0] in connection:
+                        cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
                         possibilities_aux += (possibility,)
-            if possibilities != ():
+            if count_fixed_pecas > 1:
                 possibilities = tuple(filter(lambda x: x in possibilities_aux, possibilities))
             else:
                 possibilities = possibilities_aux
 
-        if col != 0 and (self.possible_moves[(row, col - 1)] == () or self.possible_moves[(row, col - 1)][0] == "0"):
-            count_fixed_pecas+=1
+        if col != 0 and (self.possible_moves[(row, col - 1)] == () or len(self.possible_moves[(row, col - 1)]) == 1):
+            count_fixed_pecas += 1
             possibilities_aux = ()
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_right_pipe(row, col - 1):
-                for connection in self.acceptable_right_connections(row, col - 1):
-                    if self.get_value(row, col)[0] in connection and connection in limits:
-                        possibilities_aux += (connection,)
-            else:
                 if self.get_value(row, col - 1)[0] == "F" and self.get_value(row, col)[0] == "F":
                     cant_be_possibility = "FE"
-                else:
-                    for connection in self.acceptable_right_connections(row, col - 1):
-                        if self.get_value(row, col)[0] in connection:
-                            cant_be_possibility += (connection,)
+                for connection in self.acceptable_right_connections(row, col - 1):
+                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                        possibilities_aux += (connection,)
+            else:
+                for connection in self.acceptable_right_connections(row, col - 1):
+                    if self.get_value(row, col)[0] in connection:
+                        cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
                         possibilities_aux += (possibility,)
-            if possibilities != ():
+            if count_fixed_pecas > 1 :
                 possibilities = tuple(filter(lambda x: x in possibilities_aux, possibilities))
             else:
                 possibilities = possibilities_aux
-
         if len(possibilities) == 1:
             old_possibilities = len(self.possible_moves[(row, col)])
-            self.possible_moves[(row, col)] = "0" + possibilities[0]
+            self.possible_moves[(row, col)] = possibilities
             self.remaining_pecas.remove((row, col))
             self.remaining_pecas.insert(0, (row, col))
             self.count_actions -= old_possibilities - 1
             return 1
-            """
-            self.remaining_pecas.remove((row, col))
-            self.set_cell(row, col, possibilities[0])
-            """
-
+        
         else:
             if possibilities:
                 old_possibilities = self.possible_moves[(row, col)]
@@ -451,18 +391,15 @@ class Board:
                     self.remaining_pecas.remove((row, col))
                     pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], len_new_possibilities)
                     self.remaining_pecas.insert(pos_to_insert, (row, col))
-                return 0
             else:
-                if count_fixed_pecas == 4:
-                    self.voltar_atras()
-                    return 0
+                if possibilities == () and count_fixed_pecas > 1:
+                    #with open('saida.txt', 'w') as arquivo:
+                    #    arquivo.write(self.print())
+                    #self.breakpoint()
+                    value = self.voltar_atras()
+                    return value
+            return 0
 
-            """
-            else: 
-                abort
-            """
-
-    
     def set_cell(self, row, col, position):
         self.matrix[row][col] = position
     
@@ -656,8 +593,5 @@ if __name__ == "__main__":
     board = Board.parse_instance()
     takuzu = PipeMania(board)
     goal_node = greedy_search(takuzu)
-    print(goal_node.state.board.print())
-    # Create a file and write the board's text representation to it
-    with open("output.txt", "w") as file:
-        file.write(str(goal_node.state.board.print()))
+    print(goal_node.state.board.print(), sep="")
     
