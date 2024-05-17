@@ -7,27 +7,7 @@
 # 00000 Nome2
 #15,20,35,50
 #15,20,50
-"""
-    É preciso arranjar uma maneira mais bonnita de so dar cet_cell no rodar_peca (eu pus no
-possible_values uma string tipo "0XX" para indicar que só há 1 possibilidade para encaixar com o que
-ja estava no codigo, it works, mas nao é boa pratica de certeza)
-    Ter em atençao a parte do remaining_cells estar ordenado por possibilidades, atualmente 
-põe-se o nó no final sem ter em atencao a quantidade de possibilidades, mas as funçoes que
-usei para por as pecas ordenadas do remaining_cells no remove_possibilities partem do pressuposto que essa lista 
-esta ordenada, portanto ate agora nao deu erro porque nao apareceu nenhuma exercicio, mas vai dar erro eventualmente
-    No rodar_peca fazemos:
-      if len(self.possible_moves[(row, col)]) == 1 or self.possible_moves[(row, col)][0] == "0":
-        *retira a celula do remaining_cells, entre outras coisas*
-      else:
-        *poe a celula no final do remaing_cells, entre outras coisas*
-    e só depois disso fazemos o calcula_next_moves, e isto não faz muito sentido tendo em conta que como o
-    calcula_next_moves so calcula os moves adjacentes de Z e pode haver alguma celula X adjacente Z que por exemplo fica
-    com apenas 1 possibilidade e isto pode afetar outra celula Y adjacente a X que tendo em conta esse cenário
-    tambem ficaria com apenas 1 possibilidade, sendo assim no rodar peça iriamos por uma celula X que tecnicamente so tem 1 possibilidade
-    no final do remaining_cells, o que é desnecessário
-    Portanto faria mais sentido adaptar o calcula_next_moves a alterar as possibilidades adjacentes de todas as celulas
-    que possam ter ficado com a sua possibilidade a 1
-"""
+
 import numpy
 import copy
 import getpass
@@ -124,7 +104,7 @@ class Board:
             """
         elif self.possible_moves[(row, col)][-1] == peca:
             # print("hi")
-            print("row", row, "col", col, "possible moves",self.possible_moves[(row, col)])
+            #print("row", row, "col", col, "possible moves",self.possible_moves[(row, col)])
             # with open('saida.txt', 'w') as arquivo:
             #    arquivo.write(self.print())
             # with open('saida.txt', 'w') as arquivo:
@@ -132,8 +112,8 @@ class Board:
             #    arquivo.write(self.print())
             #exit()
             move = self.possible_moves[(row, col)][-1]
-            print("move", move)
-            self.breakpoint()
+            #print("move", move)
+            #self.breakpoint()
             
             new_board.remaining_possible_moves[(row, col)] = copy.deepcopy(self.possible_moves)
             new_board.remaining_possible_moves[(row, col)][(row, col)] = self.possible_moves[(row, col)][:-1]
@@ -266,13 +246,7 @@ class Board:
             if code == 1:
                 self.possible_moves = self.remaining_possible_moves[(row,col)]
                 break
-        print("voltar atras")
-        print("4,4: 6,5: 8,4: 7,5: 6,4")
-        print(self.possible_moves[(4,4)], self.possible_moves[(6,5)],
-              self.possible_moves[(8,4)], self.possible_moves[(7,5)],
-              self.possible_moves[(6,4)])
-        self.breakpoint()
-        print(self.remaining_pecas)
+        row_aux, col_aux = "", ""
         for (row, col, code) in self.trial_pecas:
             num_possibilities = len(self.possible_moves[(row, col)])
             lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
@@ -282,10 +256,10 @@ class Board:
             self.remaining_pecas = list(map(tuple, remaining_pecas_np))
             self.trial_pecas = self.trial_pecas[1:]
             if code == 1:
+                row_aux, col_aux = row, col
                 break
-        print(self.remaining_pecas)
-        for peca in self.remaining_pecas:
-            print(self.possible_moves[peca])
+        if len(self.possible_moves[(row_aux, col_aux)]) == 1:
+            return 1
         return 0
 
     def remove_possibilities(self, row, col):
@@ -404,9 +378,6 @@ class Board:
                     self.remaining_pecas = list(map(tuple, remaining_pecas_np))
             else:
                 if possibilities == () and count_fixed_pecas > 1:
-                    #with open('saida.txt', 'w') as arquivo:
-                    #    arquivo.write(self.print())
-                    #self.breakpoint()
                     value = self.voltar_atras()
                     return value
             return 0
@@ -605,7 +576,3 @@ if __name__ == "__main__":
     takuzu = PipeMania(board)
     goal_node = greedy_search(takuzu)
     print(goal_node.state.board.print(), sep="")
-    # Create a file and write the board's text representation to it
-    with open("output.txt", "w") as file:
-        file.write(str(goal_node.state.board.print()))
-    
