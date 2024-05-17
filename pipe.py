@@ -28,10 +28,10 @@ esta ordenada, portanto ate agora nao deu erro porque nao apareceu nenhuma exerc
     Portanto faria mais sentido adaptar o calcula_next_moves a alterar as possibilidades adjacentes de todas as celulas
     que possam ter ficado com a sua possibilidade a 1
 """
+import numpy
 import copy
 import getpass
 import sys
-import bisect
 from search import (
     Problem,
     Node,
@@ -133,7 +133,6 @@ class Board:
             #exit()
             move = self.possible_moves[(row, col)][-1]
             print("move", move)
-            print(self.possible_moves)
             self.breakpoint()
             
             new_board.remaining_possible_moves[(row, col)] = copy.deepcopy(self.possible_moves)
@@ -192,8 +191,11 @@ class Board:
                     self.possible_moves[(row, col)] = possibility
 
                     if self.remaining_pecas:
-                        pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
-                        self.remaining_pecas.insert(pos_to_insert, (row, col))
+                        lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
+                        pos_to_insert = numpy.searchsorted(lengths, num_possibilities, side='right')
+                        remaining_pecas_np = numpy.array(self.remaining_pecas)
+                        remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
+                        self.remaining_pecas = list(map(tuple, remaining_pecas_np))
                     else:
                         self.remaining_pecas.insert(0, (row, col))
 
@@ -270,13 +272,20 @@ class Board:
               self.possible_moves[(8,4)], self.possible_moves[(7,5)],
               self.possible_moves[(6,4)])
         self.breakpoint()
+        print(self.remaining_pecas)
         for (row, col, code) in self.trial_pecas:
             num_possibilities = len(self.possible_moves[(row, col)])
-            pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], num_possibilities)
-            self.remaining_pecas.insert(pos_to_insert, (row, col))
+            lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
+            pos_to_insert = numpy.searchsorted(lengths, num_possibilities, side='right')
+            remaining_pecas_np = numpy.array(self.remaining_pecas)
+            remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
+            self.remaining_pecas = list(map(tuple, remaining_pecas_np))
             self.trial_pecas = self.trial_pecas[1:]
             if code == 1:
                 break
+        print(self.remaining_pecas)
+        for peca in self.remaining_pecas:
+            print(self.possible_moves[peca])
         return 0
 
     def remove_possibilities(self, row, col):
@@ -388,8 +397,11 @@ class Board:
                 if len_old_possibilities != len_new_possibilities:
                     self.count_actions -= len_old_possibilities - len_new_possibilities
                     self.remaining_pecas.remove((row, col))
-                    pos_to_insert = bisect.bisect_right([len(self.possible_moves[pos]) for pos in self.remaining_pecas], len_new_possibilities)
-                    self.remaining_pecas.insert(pos_to_insert, (row, col))
+                    lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
+                    pos_to_insert = numpy.searchsorted(lengths, len_new_possibilities, side='right')
+                    remaining_pecas_np = numpy.array(self.remaining_pecas)
+                    remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
+                    self.remaining_pecas = list(map(tuple, remaining_pecas_np))
             else:
                 if possibilities == () and count_fixed_pecas > 1:
                     #with open('saida.txt', 'w') as arquivo:
