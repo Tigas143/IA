@@ -9,7 +9,6 @@
 #15,20,50
 
 import numpy
-import copy
 import getpass
 import sys
 from search import (
@@ -53,7 +52,7 @@ class Board:
         self.trial_pecas = []
         self.possible_moves = {}
         self.remaining_possible_moves = {}
-
+        self.current_escolha = []
         self.count_actions = 0
         self.invalid = False
     
@@ -72,22 +71,19 @@ class Board:
         #self.breakpoint()
         #print("valores da row 1, col 0", self.possible_moves[(1,0)], self.get_value(1,0))
        
-        new_matrix = [row[:] for row in self.matrix]  # Creating a deep copy of the matrix
-        new_matrix[row][col] = peca
+        self.matrix[row][col] = peca
         #print("Pecas para rodar:",self.remaining_pecas)
         #print("roda peca: ", row,col, peça)
-
         #self.breakpoint()
-        new_board = Board(new_matrix)
+        new_board = Board(self.matrix)
         new_board.count_actions = self.count_actions
         new_board.possible_moves = self.possible_moves
-
+        new_board.current_escolha = self.current_escolha
         new_board.trial_pecas = self.trial_pecas
         new_board.remaining_possible_moves = self.remaining_possible_moves
-        
-        #if self.trial_pecas != []:
-        #    new_board.trial_pecas.insert(0, (row,col, 0))
-
+        if new_board.current_escolha != []:
+            if (row,col) not in self.remaining_possible_moves[self.current_escolha[0]].keys():
+                        self.remaining_possible_moves[self.current_escolha[0]][(row,col)] = self.possible_moves[(row,col)]
         if len(self.possible_moves[(row, col)]) == 1:
             move = self.possible_moves[(row, col)][0]
             self.count_actions -= 1
@@ -114,8 +110,8 @@ class Board:
             move = self.possible_moves[(row, col)][-1]
             #print("move", move)
             #self.breakpoint()
-            
-            new_board.remaining_possible_moves[(row, col)] = copy.deepcopy(self.possible_moves)
+            new_board.current_escolha.insert(0, (row,col))
+            new_board.remaining_possible_moves[(row,col)] = {}
             new_board.remaining_possible_moves[(row, col)][(row, col)] = self.possible_moves[(row, col)][:-1]
             new_board.trial_pecas.insert(0, (row,col, 1))
             new_board.set_cell(row, col, move)
@@ -242,10 +238,9 @@ class Board:
     
 
     def voltar_atras(self):
-        for (row, col, code) in self.trial_pecas:
-            if code == 1:
-                self.possible_moves = self.remaining_possible_moves[(row,col)]
-                break
+        for key, value in self.remaining_possible_moves[self.current_escolha[0]].items():
+            self.possible_moves[key] = value
+        self.current_escolha = self.current_escolha[1:]
         row_aux, col_aux = "", ""
         for (row, col, code) in self.trial_pecas:
             num_possibilities = len(self.possible_moves[(row, col)])
@@ -265,7 +260,9 @@ class Board:
     def remove_possibilities(self, row, col):
         count_fixed_pecas = 0
         possibilities = ()
-
+        if self.current_escolha != []:
+            if (row,col) not in self.remaining_possible_moves[self.current_escolha[0]].keys():
+                        self.remaining_possible_moves[self.current_escolha[0]][(row,col)] = self.possible_moves[(row,col)]
         if row != 0 and (self.possible_moves[(row - 1, col)] == () or len(self.possible_moves[(row - 1, col)]) == 1):
             count_fixed_pecas += 1
             cant_be_possibility = ()
@@ -574,5 +571,7 @@ class PipeMania(Problem):
 if __name__ == "__main__":
     board = Board.parse_instance()
     takuzu = PipeMania(board)
-    goal_node = greedy_search(takuzu)
+    goal_node = astar_search(takuzu)
     print(goal_node.state.board.print(), sep="")
+    with open("output.txt", "w") as file:
+        file.write(str(goal_node.state.board.print()))
