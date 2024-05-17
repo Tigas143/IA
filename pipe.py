@@ -238,6 +238,8 @@ class Board:
     
 
     def voltar_atras(self):
+        print(self.current_escolha)
+        print(self.trial_pecas)
         for key, value in self.remaining_possible_moves[self.current_escolha[0]].items():
             self.possible_moves[key] = value
         self.current_escolha = self.current_escolha[1:]
@@ -260,6 +262,7 @@ class Board:
     def remove_possibilities(self, row, col):
         count_fixed_pecas = 0
         possibilities = ()
+        value_row_col = self.get_value(row, col)[0]
         if self.current_escolha != []:
             if (row,col) not in self.remaining_possible_moves[self.current_escolha[0]].keys():
                         self.remaining_possible_moves[self.current_escolha[0]][(row,col)] = self.possible_moves[(row,col)]
@@ -268,14 +271,14 @@ class Board:
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_down_pipe(row - 1,col):
-                if self.get_value(row - 1,col)[0] == "F" and self.get_value(row, col)[0] == "F":
+                if self.get_value(row - 1,col)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FC"
                 for connection in self.acceptable_down_connections(row - 1, col):
-                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                    if value_row_col in connection and connection in limits and cant_be_possibility != connection:
                         possibilities += (connection,)
             else:
                 for connection in self.acceptable_down_connections(row - 1, col):
-                    if self.get_value(row, col)[0] in connection:
+                    if value_row_col in connection:
                         cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
@@ -287,14 +290,14 @@ class Board:
             possibilities_aux = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_up_pipe(row + 1,col):   
-                if self.get_value(row + 1,col)[0] == "F" and self.get_value(row, col)[0] == "F":
+                if self.get_value(row + 1,col)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FB"         
                 for connection in self.acceptable_up_connections(row + 1, col):
-                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                    if value_row_col in connection and connection in limits and cant_be_possibility != connection:
                         possibilities_aux += (connection,)
             else:
                 for connection in self.acceptable_up_connections(row + 1, col):
-                    if self.get_value(row, col)[0] in connection:
+                    if value_row_col in connection:
                         cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
@@ -311,7 +314,7 @@ class Board:
             limits = self.check_frontiers(row, col)
 
             if self.has_open_left_pipe(row, col + 1):
-                if self.get_value(row, col + 1)[0] == "F" and self.get_value(row, col)[0] == "F":
+                if self.get_value(row, col + 1)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FD"
                 for connection in self.acceptable_left_connections(row, col + 1):
                     if self.get_value(row,col)[0] in connection and connection in limits and cant_be_possibility != connection:
@@ -319,7 +322,7 @@ class Board:
                 
             else:
                 for connection in self.acceptable_left_connections(row, col + 1):
-                    if self.get_value(row, col)[0] in connection:
+                    if value_row_col in connection:
                         cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
@@ -335,14 +338,14 @@ class Board:
             cant_be_possibility = ()
             limits = self.check_frontiers(row, col)
             if self.has_open_right_pipe(row, col - 1):
-                if self.get_value(row, col - 1)[0] == "F" and self.get_value(row, col)[0] == "F":
+                if self.get_value(row, col - 1)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FE"
                 for connection in self.acceptable_right_connections(row, col - 1):
-                    if self.get_value(row, col)[0] in connection and connection in limits and cant_be_possibility != connection:
+                    if value_row_col in connection and connection in limits and cant_be_possibility != connection:
                         possibilities_aux += (connection,)
             else:
                 for connection in self.acceptable_right_connections(row, col - 1):
-                    if self.get_value(row, col)[0] in connection:
+                    if value_row_col in connection:
                         cant_be_possibility += (connection,)
                 for possibility in self.get_all_possibilities(row, col):
                     if possibility not in cant_be_possibility and possibility in limits:
