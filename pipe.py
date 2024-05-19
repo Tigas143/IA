@@ -2,14 +2,9 @@
 # Devem alterar as classes e funções neste ficheiro de acordo com as instruções do enunciado.
 # Além das funções e classes sugeridas, podem acrescentar outras que considerem pertinentes.
 
-# Grupo 00:
-# 00000 Nome1
-# 00000 Nome2
-#15,20,35,50
-#15,20,50
-
-import numpy
-import getpass
+# Grupo 04:
+# 106834 Tiago Aleixo
+# 102074 Isabel Comédias
 import sys
 from search import (
     Problem,
@@ -59,10 +54,6 @@ class Board:
     def print(self):
         board_string = "\n".join(["\t".join(row) for row in self.matrix])
         return board_string
-
-
-    def breakpoint(self):
-        getpass.getpass("Pressione Enter para continuar... (Ctrl+C para sair)")
     
     
     def rodar_peça(self, row: int, col: int, peca: str):
@@ -113,6 +104,7 @@ class Board:
             new_board.current_escolha.insert(0, (row,col))
             new_board.remaining_possible_moves[(row,col)] = {}
             new_board.remaining_possible_moves[(row, col)][(row, col)] = self.possible_moves[(row, col)][:-1]
+            new_board.count_actions -= 1
             new_board.trial_pecas.insert(0, (row,col, 1))
             new_board.set_cell(row, col, move)
             new_board.possible_moves[(row, col)] = ()
@@ -167,11 +159,7 @@ class Board:
                     self.possible_moves[(row, col)] = possibility
 
                     if self.remaining_pecas:
-                        lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
-                        pos_to_insert = numpy.searchsorted(lengths, num_possibilities, side='right')
-                        remaining_pecas_np = numpy.array(self.remaining_pecas)
-                        remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
-                        self.remaining_pecas = list(map(tuple, remaining_pecas_np))
+                        self.remaining_pecas.insert(0, (row, col))
                     else:
                         self.remaining_pecas.insert(0, (row, col))
 
@@ -238,19 +226,14 @@ class Board:
     
 
     def voltar_atras(self):
-        print(self.current_escolha)
-        print(self.trial_pecas)
         for key, value in self.remaining_possible_moves[self.current_escolha[0]].items():
+            self.count_actions += len(self.possible_moves[key]) - len(value)
             self.possible_moves[key] = value
         self.current_escolha = self.current_escolha[1:]
         row_aux, col_aux = "", ""
         for (row, col, code) in self.trial_pecas:
             num_possibilities = len(self.possible_moves[(row, col)])
-            lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
-            pos_to_insert = numpy.searchsorted(lengths, num_possibilities, side='right')
-            remaining_pecas_np = numpy.array(self.remaining_pecas)
-            remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
-            self.remaining_pecas = list(map(tuple, remaining_pecas_np))
+            self.remaining_pecas.insert(0, (row, col))
             self.trial_pecas = self.trial_pecas[1:]
             if code == 1:
                 row_aux, col_aux = row, col
@@ -263,13 +246,13 @@ class Board:
         count_fixed_pecas = 0
         possibilities = ()
         value_row_col = self.get_value(row, col)[0]
+        limits = self.possible_moves[(row,col)]
         if self.current_escolha != []:
             if (row,col) not in self.remaining_possible_moves[self.current_escolha[0]].keys():
                         self.remaining_possible_moves[self.current_escolha[0]][(row,col)] = self.possible_moves[(row,col)]
         if row != 0 and (self.possible_moves[(row - 1, col)] == () or len(self.possible_moves[(row - 1, col)]) == 1):
             count_fixed_pecas += 1
             cant_be_possibility = ()
-            limits = self.check_frontiers(row, col)
             if self.has_open_down_pipe(row - 1,col):
                 if self.get_value(row - 1,col)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FC"
@@ -288,7 +271,6 @@ class Board:
             count_fixed_pecas += 1
             cant_be_possibility = ()
             possibilities_aux = ()
-            limits = self.check_frontiers(row, col)
             if self.has_open_up_pipe(row + 1,col):   
                 if self.get_value(row + 1,col)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FB"         
@@ -311,7 +293,6 @@ class Board:
             count_fixed_pecas += 1
             possibilities_aux = ()
             cant_be_possibility = ()
-            limits = self.check_frontiers(row, col)
 
             if self.has_open_left_pipe(row, col + 1):
                 if self.get_value(row, col + 1)[0] == "F" and value_row_col == "F":
@@ -336,7 +317,6 @@ class Board:
             count_fixed_pecas += 1
             possibilities_aux = ()
             cant_be_possibility = ()
-            limits = self.check_frontiers(row, col)
             if self.has_open_right_pipe(row, col - 1):
                 if self.get_value(row, col - 1)[0] == "F" and value_row_col == "F":
                     cant_be_possibility = "FE"
@@ -371,11 +351,7 @@ class Board:
                 if len_old_possibilities != len_new_possibilities:
                     self.count_actions -= len_old_possibilities - len_new_possibilities
                     self.remaining_pecas.remove((row, col))
-                    lengths = numpy.array([len(self.possible_moves[pos]) for pos in self.remaining_pecas])
-                    pos_to_insert = numpy.searchsorted(lengths, len_new_possibilities, side='right')
-                    remaining_pecas_np = numpy.array(self.remaining_pecas)
-                    remaining_pecas_np = numpy.insert(remaining_pecas_np, pos_to_insert, (row, col), axis=0)
-                    self.remaining_pecas = list(map(tuple, remaining_pecas_np))
+                    self.remaining_pecas.insert(0, (row, col))
             else:
                 if possibilities == () and count_fixed_pecas > 1:
                     value = self.voltar_atras()
@@ -397,7 +373,6 @@ class Board:
             return ("LH", "LV")
       
     def check_frontiers(self, row, col):
-
         move = self.matrix[row][col]
         if (col == 0 and (row == 0 or row == self.size - 1)) or (col == self.size - 1 and (row == 0 or row == self.size - 1)):
             if self.matrix[row][col][0] == "B" or self.matrix[row][col][0] == "L":
@@ -573,8 +548,8 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
     board = Board.parse_instance()
-    takuzu = PipeMania(board)
-    goal_node = astar_search(takuzu)
+    pipemania = PipeMania(board)
+    goal_node = greedy_search(pipemania)
     print(goal_node.state.board.print(), sep="")
     with open("output.txt", "w") as file:
         file.write(str(goal_node.state.board.print()))
